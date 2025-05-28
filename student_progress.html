@@ -1,0 +1,491 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title data-translate="page.studentProgress.title">Student Progress - Mialama Platform</title>
+
+    <script src="https://cdn.jsdelivr.net/npm/dexie@3.2.4/dist/dexie.min.js"></script>
+    <script src="js/teachersdataapi.js"></script>
+
+    <script src="https://cdn.jsdelivr.net/npm/@tabler/core@1.1.1/dist/js/tabler.min.js"></script>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/core@1.1.1/dist/css/tabler.min.css" />
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css">
+    <style>
+        .unit-accordion .accordion-item { margin-bottom: 1rem; }
+        .lesson-card-sm { margin-bottom: 0.5rem; }
+
+        .accordion-header {
+    margin: 0;
+    position: relative;
+    display: flex;
+    gap: 1rem;
+    align-items: center;
+    width: 100%;
+    color: var(--tblr-accordion-btn-color);
+    text-align: left;
+    background-color: transparent;
+    border: 0;
+    overflow-anchor: none;
+    transition: transform .3s;
+}
+
+.accordion-button {
+
+    position: relative;
+    display: flex;
+    align-items: center;
+    width: 100%;
+    padding: var(--tblr-accordion-btn-padding-y) var(--tblr-accordion-padding-x);
+    color: inherit;
+    text-align: inherit;
+    background-color: transparent;
+    border: 0;
+    font-size: inherit;
+    font-weight: var(--tblr-accordion-btn-font-weight);
+    gap: .75rem;
+}
+
+
+.accordion-button:not(.collapsed) .accordion-button-toggle
+ {
+    transform: rotate(-180deg);
+    color: var(--tblr-accordion-active-color);
+}
+
+    </style>
+</head>
+<body data-bs-theme="light">
+    <div class="page">
+        <!-- Navbar -->
+        <header class="navbar navbar-expand-md navbar-light d-print-none">
+            <div class="container-xl">
+                <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar-menu">
+                    <span class="navbar-toggler-icon"></span>
+                </button>
+                <div class="navbar-brand navbar-brand-autodark d-none-navbar-horizontal pe-0 pe-md-3">
+                    <a href="./index.html">
+                        <img src="./Sources/imgs/logo.png" height="36" alt="Mialama Platform" class="navbar-brand-image" data-translate-alt="alt.logo.mialamaPlatform">
+                    </a>
+                </div>
+                <div class="collapse navbar-collapse" id="navbar-menu">
+                    <div class="d-flex flex-column flex-md-row flex-fill align-items-stretch align-items-md-center">
+                        <ul class="navbar-nav">
+                            <li class="nav-item"> <!-- Removed 'active' class, JS should handle this or it's page specific -->
+                                <a class="nav-link" href="./index.html">
+                                    <span class="nav-link-icon d-md-none d-lg-inline-block">
+                                        <i class="ti ti-home"></i>
+                                    </span>
+                                    <span class="nav-link-title" data-translate="nav.dashboard">Dashboard</span>
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link" href="./program_explorer.html">
+                                     <span class="nav-link-icon d-md-none d-lg-inline-block">
+                                        <i class="ti ti-book"></i> <!-- Assuming ti-book is correct, index.html had ti-book-search -->
+                                    </span>
+                                    <span class="nav-link-title" data-translate="nav.programExplorer">Program Explorer</span>
+                                </a>
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+                <div class="navbar-nav flex-row order-md-last">
+                    <div class="nav-item dropdown">
+                        <a href="#" class="nav-link d-flex lh-1 text-reset p-0" data-bs-toggle="dropdown" data-translate-aria-label="aria.openUserMenu" aria-label="Open user menu">
+                            <span class="avatar avatar-sm" id="userAvatar"></span>
+                            <div class="d-none d-xl-block ps-2">
+                                <div id="teacherNameDisplay">Teacher Name</div>
+                                <div class="mt-1 small text-secondary" data-translate="text.teacherRole">Teacher</div>
+                            </div>
+                        </a>
+                        <div class="dropdown-menu dropdown-menu-end dropdown-menu-arrow">
+                            <a href="./profile.html" class="dropdown-item"><i class="ti ti-user-circle icon me-2"></i><span data-translate="dropdown.profile">Profile</span></a>
+                            <a href="./setup.html" class="dropdown-item"><i class="ti ti-settings icon me-2"></i><span data-translate="dropdown.appSetup">Application Setup</span></a>
+                            <a href="#" class="dropdown-item" id="logoutButton"><i class="ti ti-logout icon me-2"></i><span data-translate="dropdown.logout">Logout</span></a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </header>
+
+        <div class="page-wrapper">
+            <!-- Page header -->
+            <div class="page-header d-print-none">
+                <div class="container-xl">
+                    <div class="row g-2 align-items-center">
+                        <div class="col">
+
+                            <nav aria-label="breadcrumb">
+                                <ol class="breadcrumb">
+                                    <li class="breadcrumb-item"><a href="index.html" data-translate="breadcrumb.dashboard">Dashboard</a></li> 
+                                    <li class="breadcrumb-item"><a id="classLinkBreadcrumb" href="#" data-translate="breadcrumb.classDetails">Class Details</a></li>
+                                    <li class="breadcrumb-item active" aria-current="page" id="studentNameBreadcrumb" data-translate="breadcrumb.studentProgress">Student Progress</a></li>
+                                </ol>
+                            </nav>
+                            <h2 class="page-title" hidden="hidden" id="pageTitle" data-translate="page.studentProgress.loadingTitle">
+                                Loading Student Progress...
+                            </h2>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <!-- Page body -->
+            <div class="page-body">
+                <div class="container-xl">
+                    <div id="studentProgressContent" style="display: none;">
+                        <div class="card mb-3">
+                            <div class="card-header">
+                                <h3 class="card-title"><span data-translate="card.student.label">Student:</span> <span id="studentNameCard"></span></h3>
+                            </div>
+                            <div class="card-body">
+                                <p><strong><span data-translate="card.class.label">Class:</span></strong> <span id="classNameCard"></span></p>
+                                <p><strong><span data-translate="card.dob.label">Date of Birth:</span></strong> <span id="studentDOBCard"></span></p>
+                                <p><strong><span data-translate="card.gender.label">Gender:</span></strong> <span id="studentGenderCard"></span></p>
+                            </div>
+                        </div>
+
+                        <h3 class="mt-4 mb-3" data-translate="heading.activityPerformanceOverview">Activity Performance Overview</h3>
+                        <div class="form-group mb-3">
+                            <label for="programTypeFilter" class="form-label" data-translate="form.label.filterByProgram">Filter by Program:</label>
+                            <select id="programTypeFilter" class="form-select">
+                                <option value="All" data-translate="filter.allPrograms">All Programs</option>
+                                <option value="Reading" data-translate="filter.readingProgram">Reading</option>
+                                <option value="Numeracy" data-translate="filter.numeracyProgram">Numeracy</option>
+                            </select>
+                        </div>
+                        <div id="progressAccordionContainer" class="unit-accordion">
+                            <!-- Progress details will be loaded here -->
+                            <p id="noProgressMessage" class="text-muted" style="display: none;" data-translate="message.noProgressRecorded.general">No activity progress recorded for this student yet.</p>
+                        </div>
+                    </div>
+                    <div id="loadingError" class="alert alert-danger" style="display: none;"></div>
+                </div>
+            </div>
+
+            <!-- Footer -->
+            <footer class="footer footer-transparent d-print-none">
+                <div class="container-xl">
+                    <div class="row text-center align-items-center flex-row-reverse">
+                        <div class="col-12 col-lg-auto mt-3 mt-lg-0">
+                            <ul class="list-inline list-inline-dots mb-0">
+                                <li class="list-inline-item" id="footerCopyrightText">
+                                    <!-- Text will be set by JS -->
+                                </li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </footer>
+        </div>
+    </div>
+    
+    <!-- IMPORTANT: Include translations.js before your main script block -->
+    <script src="js/translations.js"></script>
+    <script>
+        const CURRENT_TEACHER_ID_KEY = 'currentTeacherId';
+        let currentTeacher = null;
+        let currentStudentId = null;
+        let currentClassId = null;
+        let studentDetails = null;
+        let classDetails = null;
+        let allStudentPerformances = [];
+
+        // Helper function to get translated strings
+        function getString(key, dynamicValues = {}) {
+            if (typeof MIALAMA_TEACHER_TRANSLATIONS_AR !== 'object' || MIALAMA_TEACHER_TRANSLATIONS_AR === null) {
+                console.error("MIALAMA_TEACHER_TRANSLATIONS_AR is not available.");
+                return `Missing translations: ${key}`;
+            }
+            let translation = MIALAMA_TEACHER_TRANSLATIONS_AR[key];
+            if (translation) {
+                return translation.replace(/\{\{(\w+)\}\}/g, (match, placeholderName) => {
+                    return dynamicValues[placeholderName] !== undefined ? dynamicValues[placeholderName] : match;
+                });
+            }
+            console.warn(`Translation key "${key}" not found for language 'ar'. Using key as fallback.`);
+            return key; 
+        }
+
+        // Helper function to get translated status string
+        function getTranslatedStatus(statusKey) {
+            // Assuming statusKey is like "Completed", "In Progress", etc.
+            // We need to map it to our translation keys like "status.completed", "status.inProgress"
+            const translationKey = 'status.' + statusKey.toLowerCase().replace(/\s+/g, '');
+            return getString(translationKey) || getString('status.unknown');
+        }
+
+
+        document.addEventListener('DOMContentLoaded', async function() {
+            // Set language and direction
+            if (typeof setDocumentLanguageAndDirection === 'function') {
+                setDocumentLanguageAndDirection('ar');
+            } else {
+                console.warn('setDocumentLanguageAndDirection function not found.');
+            }
+            
+            // Apply initial translations to static content
+            // Dynamic content translations will be handled after data is loaded.
+            if (typeof applyTranslations === 'function') {
+                applyTranslations('ar');
+            } else {
+                console.warn('applyTranslations function not found.');
+            }
+            
+            document.getElementById('footerCopyrightText').innerHTML = getString("footer.copyrightText", { year: new Date().getFullYear() });
+
+
+            const params = new URLSearchParams(window.location.search);
+            currentStudentId = params.get('student_id');
+            currentClassId = params.get('class_id');
+
+            if (!currentStudentId || !currentClassId) {
+                showError(getString("error.missingStudentOrClassId"));
+                return;
+            }
+
+            try {
+                await initializeDatabase();
+                console.log(getString("console.dbInitStudentProgress"));
+
+                const teacherId = localStorage.getItem(CURRENT_TEACHER_ID_KEY);
+                if (!teacherId) {
+                    alert(getString("alert.noTeacherInfo")); // Re-use key from index.html
+                    window.location.href = 'setup.html';
+                    return;
+                }
+                currentTeacher = await getTeacher(teacherId);
+                if (!currentTeacher) {
+                    alert(getString("alert.teacherProfileNotFound")); // Re-use key from index.html
+                    localStorage.removeItem(CURRENT_TEACHER_ID_KEY);
+                    window.location.href = 'setup.html';
+                    return;
+                }
+                updateUserUI(currentTeacher);
+
+                studentDetails = await getStudentById(currentStudentId);
+                classDetails = await getClassById(currentClassId);
+
+                if (!studentDetails) {
+                    showError(getString("error.studentNotFound"));
+                    return;
+                }
+                if (!classDetails || classDetails.teacher_id !== currentTeacher.teacher_id) {
+                    showError(getString("error.classNotFoundOrPermission"));
+                    return;
+                }
+                if (studentDetails.class_id !== currentClassId) {
+                    showError(getString("error.studentNotInClass"));
+                    return;
+                }
+
+                document.getElementById('pageTitle').textContent = getString("page.studentProgress.titleForStudent", { studentName: escapeHTML(studentDetails.full_name) });
+                document.getElementById('studentNameBreadcrumb').textContent = escapeHTML(studentDetails.full_name);
+                document.getElementById('classLinkBreadcrumb').href = `class_details.html?class_id=${currentClassId}`;
+                document.getElementById('classLinkBreadcrumb').textContent = getString("breadcrumb.classLinkText", {className: escapeHTML(classDetails.class_name)});
+
+                displayStudentDetails();
+                allStudentPerformances = await getAllActivityPerformancesForStudent(currentStudentId);
+                
+                renderProgressOverview(); 
+
+                document.getElementById('programTypeFilter').addEventListener('change', renderProgressOverview);
+                document.getElementById('studentProgressContent').style.display = 'block';
+                
+                // Re-apply translations if any new dynamic elements were added that weren't covered by specific textContent sets
+                if (typeof applyTranslations === 'function') {
+                    applyTranslations('ar', { 
+                        studentName: escapeHTML(studentDetails.full_name),
+                        className: escapeHTML(classDetails.class_name) 
+                    });
+                }
+
+
+            } catch (error) {
+                console.error(getString("console.errorStudentProgressPage", {errorMessage: error.message}), error);
+                showError(getString("error.loadingStudentProgress", { errorMessage: error.message + (error.stack ? `\n${error.stack}` : '') }));
+            }
+        });
+
+        function updateUserUI(teacher) {
+            document.getElementById('teacherNameDisplay').textContent = teacher.full_name;
+            const initials = teacher.full_name.split(' ').map(n => n[0]).join('').substring(0,2).toUpperCase();
+            document.getElementById('userAvatar').textContent = initials;
+            document.getElementById('logoutButton').addEventListener('click', function(e) {
+                e.preventDefault();
+                if (confirm(getString("confirm.logout"))) { // Re-use key
+                    localStorage.removeItem(CURRENT_TEACHER_ID_KEY);
+                    window.location.href = 'setup.html';
+                }
+            });
+        }
+
+        function showError(message) {
+            const errorDiv = document.getElementById('loadingError');
+            errorDiv.textContent = message; // Message is already translated by caller
+            errorDiv.style.display = 'block';
+            document.getElementById('pageTitle').textContent = getString("page.title.error");
+            document.getElementById('studentProgressContent').style.display = 'none';
+        }
+
+        function displayStudentDetails() {
+            document.getElementById('studentNameCard').textContent = escapeHTML(studentDetails.full_name);
+            document.getElementById('classNameCard').textContent = escapeHTML(classDetails.class_name);
+            document.getElementById('studentDOBCard').textContent = studentDetails.date_of_birth ? new Date(studentDetails.date_of_birth).toLocaleDateString('en-GB') : getString("text.notApplicable"); // Use Arabic locale for date
+            document.getElementById('studentGenderCard').textContent = escapeHTML(studentDetails.gender) || getString("text.notApplicable");
+        }
+
+        async function renderProgressOverview() {
+            const container = document.getElementById('progressAccordionContainer');
+            const noProgressMessageEl = document.getElementById('noProgressMessage');
+            const selectedProgramType = document.getElementById('programTypeFilter').value;
+            const selectedProgramTypeText = document.getElementById('programTypeFilter').options[document.getElementById('programTypeFilter').selectedIndex].text;
+
+
+            container.innerHTML = `<div class="text-center p-3"><div class="spinner-border spinner-border-sm" role="status"></div> ${getString("text.loadingProgress")}</div>`;
+            //noProgressMessageEl.style.display = 'none';
+
+            if (!allStudentPerformances || allStudentPerformances.length === 0) {
+                container.innerHTML = '';
+                noProgressMessageEl.textContent = getString("message.noProgressRecorded.general");
+                noProgressMessageEl.style.display = 'block';
+                return;
+            }
+
+            let enrichedPerformances = [];
+            for (const perf of allStudentPerformances) {
+                const activity = await getActivity(perf.activity_id);
+                if (!activity) continue;
+                const lesson = await getLesson(activity.lesson_id);
+                if (!lesson) continue;
+                const unit = await getProgramUnit(lesson.unit_id);
+                if (!unit) continue;
+
+                if (selectedProgramType !== "All" && unit.program_type !== selectedProgramType) {
+                    continue;
+                }
+                
+                const implementation = await getLessonImplementationById(perf.implementation_id);
+                if (!implementation || implementation.class_id !== currentClassId) {
+                    continue; 
+                }
+
+                enrichedPerformances.push({
+                    ...perf,
+                    activityName: activity.activity_name_ar, // Assuming these are already Arabic
+                    lessonTitle: lesson.lesson_title_ar,   // Assuming these are already Arabic
+                    lessonId: lesson.lesson_id,
+                    unitTitle: unit.unit_title_ar,       // Assuming these are already Arabic
+                    unitId: unit.unit_id,
+                    programType: unit.program_type // This is 'Reading' or 'Numeracy', used for badge
+                });
+            }
+
+            if (enrichedPerformances.length === 0) {
+                container.innerHTML = '';
+                let programDisplay = selectedProgramType === "All" ? getString("message.noProgressRecorded.anyProgram") : selectedProgramTypeText; // Use translated filter text
+                noProgressMessageEl.textContent = getString("message.noProgressRecorded.filtered", { programType: programDisplay });
+                noProgressMessageEl.style.display = 'block';
+                return;
+            }
+
+            const groupedByUnit = enrichedPerformances.reduce((acc, perf) => {
+                acc[perf.unitId] = acc[perf.unitId] || { title: perf.unitTitle, program: perf.programType, lessons: {} };
+                acc[perf.unitId].lessons[perf.lessonId] = acc[perf.unitId].lessons[perf.lessonId] || { title: perf.lessonTitle, activities: [] };
+                acc[perf.unitId].lessons[perf.lessonId].activities.push(perf);
+                return acc;
+            }, {});
+
+            let accordionHtml = '';
+            Object.keys(groupedByUnit).forEach(unitId => {
+                const unitData = groupedByUnit[unitId];
+                const unitHtmlId = `unit-${unitId.replace(/[^a-zA-Z0-9]/g, '')}`; // Sanitize ID
+                // Translate program type for badge if it's 'Reading' or 'Numeracy'
+                let programBadgeText = unitData.program;
+                if (unitData.program === 'Reading') programBadgeText = getString('filter.readingProgram');
+                if (unitData.program === 'Numeracy') programBadgeText = getString('filter.numeracyProgram');
+
+                accordionHtml += ` <div class="card">
+                    <div class="card-body">
+                    <div class="accordion-item">
+                        <div class="accordion-header" id="heading-${unitHtmlId}">
+                            <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapse-${unitHtmlId}" aria-expanded="false">
+                               
+                                                                 <div class="accordion-button-icon">
+                              <!-- Unit SVG Icon Download SVG icon from http://tabler.io/icons/icon/link -->
+<svg  xmlns="http://www.w3.org/2000/svg"  width="24"  height="24"  viewBox="0 0 24 24"  fill="none"  stroke="currentColor"  stroke-width="2"  stroke-linecap="round"  stroke-linejoin="round"  class="icon icon-tabler icons-tabler-outline icon-tabler-book-2"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M19 4v16h-12a2 2 0 0 1 -2 -2v-12a2 2 0 0 1 2 -2h12z" /><path d="M19 16h-12a2 2 0 0 0 -2 2" /><path d="M9 8h6" /></svg>
+                            </div>  
+                               
+                               <h2 class="page-title">  ${escapeHTML(unitData.title)} </h2> <span class="badge bg-blue text-blue-fg ms-2">${escapeHTML(programBadgeText)}</span>
+
+
+
+                                <div class="accordion-button-toggle">
+                              <!-- Download SVG icon from http://tabler.io/icons/icon/chevron-down -->
+                              <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-1">
+                                <path d="M6 9l6 6l6 -6"></path>
+                              </svg>
+                            </div>
+
+
+                            </button>
+                        </div>
+                        <div id="collapse-${unitHtmlId}" class="accordion-collapse collapse" data-bs-parent="#progressAccordionContainer">
+                            <div class="accordion-body">`;
+                
+                Object.keys(unitData.lessons).forEach(lessonId => {
+                    const lessonData = unitData.lessons[lessonId];
+                    accordionHtml += `
+                        <div class="card lesson-card-sm">
+                            <div class="card-header">
+                                <h5 class="card-title mb-0">${escapeHTML(lessonData.title)}</h5>
+                            </div>
+                            <ul class="list-group list-group-flush">`;
+                    lessonData.activities.forEach(perf => {
+                        // perf.performance_status is assumed to be English like "Completed", "In Progress"
+                        const translatedStatus = getTranslatedStatus(perf.performance_status);
+                        accordionHtml += `
+                            <li class="list-group-item">
+                                <div class="d-flex justify-content-between">
+                                    <span>${escapeHTML(perf.activityName)}</span>
+                                    <span class="badge bg-${getBootstrapColorForStatus(perf.performance_status)}">${escapeHTML(translatedStatus)}</span>
+                                </div>
+                                ${perf.teacher_notes ? `<small class="d-block text-muted"><em>${getString("text.notesLabel")}</em> ${escapeHTML(perf.teacher_notes)}</small>` : ''}
+                                <small class="d-block text-muted">${getString("text.recordedLabel")} ${new Date(perf.date_recorded).toLocaleDateString('en-GB')}</small>
+                                <a href="lesson_view.html?lesson_id=${lessonId}&class_id=${currentClassId}#activity-${perf.activity_id}" class="btn btn-sm btn-link p-0">${getString("button.viewInLesson")}</a>
+                            </li>`;
+                    });
+                    accordionHtml += `</ul></div>`;
+                });
+                accordionHtml += `</div></div></div></div></div>`;
+            });
+
+            container.innerHTML = accordionHtml || `<p class="text-muted">${getString("message.noMatchingProgressFilter")}</p>`;
+        }
+        
+        function getBootstrapColorForStatus(status) {
+            // Status is English key from DB: "Completed", "Mastered", "In Progress", "Needs Support", "Not Started"
+            switch (status) {
+                case "Completed":
+                case "Mastered":
+                    return "green text-green-fg";
+                case "In Progress":
+                    return "azure text-azure-fg";
+                case "Needs Support":
+                    return "yellow text-yellow-fg";
+                case "Not Started":
+                    return "red text-red-fg";
+                default:
+                    return "dark text-dark-fg";
+            }
+        }
+
+        function escapeHTML(str) {
+            if (str === null || str === undefined) return '';
+            return String(str).replace(/[&<>"']/g, function (match) {
+                return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[match];
+            });
+        }
+    </script>
+</body>
+</html>

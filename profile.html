@@ -1,0 +1,410 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title data-translate="page.profile.title">My Profile - Mialama Platform</title>
+
+    <script src="https://cdn.jsdelivr.net/npm/dexie@3.2.4/dist/dexie.min.js"></script>
+    <script src="js/teachersdataapi.js"></script>
+    <script src="js/export_utils.js"></script> <!-- Ensure this is included -->
+
+    <script src="https://cdn.jsdelivr.net/npm/@tabler/core@1.1.1/dist/js/tabler.min.js"></script>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/core@1.1.1/dist/css/tabler.min.css" />
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css">
+</head>
+<body data-bs-theme="light">
+    <div class="page">
+        <!-- Navbar -->
+        <header class="navbar navbar-expand-md navbar-light d-print-none">
+            <div class="container-xl">
+                <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar-menu">
+                    <span class="navbar-toggler-icon"></span>
+                </button>
+                <div class="navbar-brand navbar-brand-autodark d-none-navbar-horizontal pe-0 pe-md-3">
+                    <a href="./index.html">
+                        <img src="./Sources/imgs/logo.png" height="36" alt="Mialama Platform" class="navbar-brand-image" data-translate-alt="alt.logo.mialamaPlatform">
+                    </a>
+                </div>
+                <div class="collapse navbar-collapse" id="navbar-menu">
+                    <div class="d-flex flex-column flex-md-row flex-fill align-items-stretch align-items-md-center">
+                        <ul class="navbar-nav">
+                            <li class="nav-item">
+                                <a class="nav-link" href="./index.html">
+                                    <span class="nav-link-icon d-md-none d-lg-inline-block">
+                                        <i class="ti ti-home"></i>
+                                    </span>
+                                    <span class="nav-link-title" data-translate="nav.dashboard">Dashboard</span>
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link" href="./program_explorer.html">
+                                     <span class="nav-link-icon d-md-none d-lg-inline-block">
+                                        <i class="ti ti-book"></i>
+                                    </span>
+                                    <span class="nav-link-title" data-translate="nav.programExplorer">Program Explorer</span>
+                                </a>
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+                <div class="navbar-nav flex-row order-md-last">
+                    <div class="nav-item dropdown">
+                        <a href="#" class="nav-link d-flex lh-1 text-reset p-0" data-bs-toggle="dropdown" data-translate-aria-label="aria.openUserMenu" aria-label="Open user menu">
+                            <span class="avatar avatar-sm" id="userAvatar"></span>
+                            <div class="d-none d-xl-block ps-2">
+                                <div id="teacherNameDisplay">Teacher Name</div>
+                                <div class="mt-1 small text-secondary" data-translate="text.teacherRole">Teacher</div>
+                            </div>
+                        </a>
+                        <div class="dropdown-menu dropdown-menu-end dropdown-menu-arrow">
+                            <a href="./profile.html" class="dropdown-item"><i class="ti ti-user-circle icon me-2"></i><span data-translate="dropdown.profile">Profile</span></a>
+                            <a href="./setup.html" class="dropdown-item"><i class="ti ti-settings icon me-2"></i><span data-translate="dropdown.appSetup">Application Setup</span></a>
+                            <a href="#" class="dropdown-item" id="logoutButton"><i class="ti ti-logout icon me-2"></i><span data-translate="dropdown.logout">Logout</span></a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </header>
+
+        <div class="page-wrapper">
+            <!-- Page header -->
+            <div class="page-header d-print-none">
+                <div class="container-xl">
+                    <div class="row g-2 align-items-center">
+                        <div class="col">
+                            <h2 class="page-title" id="pageTitle" data-translate="page.profile.mainTitle">
+                                My Profile & Settings
+                            </h2>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <!-- Page body -->
+            <div class="page-body">
+                <div class="container-xl">
+                    <div class="row g-4">
+                        <!-- Profile Update Card -->
+                        <div class="col-md-6">
+                            <div class="card">
+                                <div class="card-header">
+                                    <h3 class="card-title" data-translate="card.profile.updateTitle">Update Profile Information</h3>
+                                </div>
+                                <div class="card-body">
+                                    <form id="profileUpdateForm">
+                                        <div class="mb-3">
+                                            <label class="form-label required" data-translate="form.label.fullName">Full Name</label>
+                                            <input type="text" class="form-control" id="teacherFullName" data-translate-placeholder="form.placeholder.fullName" placeholder="Enter your full name" required>
+                                        </div>
+                                        <div class="mb-3">
+                                            <label class="form-label required" data-translate="form.label.emailAddress">Email Address</label>
+                                            <input type="email" class="form-control" id="teacherEmail" data-translate-placeholder="form.placeholder.email" placeholder="Enter your email" required>
+                                            <small class="form-hint" data-translate="form.hint.emailIdentification">Your email is used for identification.</small>
+                                        </div>
+                                        <div class="form-footer">
+                                            <button type="submit" class="btn btn-primary" data-translate="button.profile.update">Update Profile</button>
+                                        </div>
+                                    </form>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Data Management Card -->
+                        <div class="col-md-6">
+                            <div class="card">
+                                <div class="card-header">
+                                    <h3 class="card-title" data-translate="card.data.managementTitle">Data Management</h3>
+                                </div>
+                                <div class="card-body">
+                                    <div class="mb-3">
+                                        <h5 data-translate="data.export.title">Export Database</h5>
+                                        <p class="text-secondary" data-translate="data.export.description">Download all your application data (teachers, classes, students, progress, etc.) as a JSON file. This can be used as a backup or to transfer data.</p>
+                                        <button class="btn btn-outline-primary" id="exportDbButton">
+                                            <i class="ti ti-file-export me-1"></i> <span data-translate="button.data.export">Export Full Database</span>
+                                        </button>
+                                    </div>
+                                    <hr>
+                                    <div class="mb-3">
+                                        <h5 data-translate="data.import.title">Import Database</h5>
+                                        <p class="text-secondary">
+                                            <span data-translate="data.import.description">Import data from a previously exported JSON file.</span>
+                                            <strong class="text-danger d-block mt-1" data-translate="data.import.warning">Warning: This will overwrite ALL existing data in your application. This action cannot be undone.</strong>
+                                        </p>
+                                        <div class="input-group">
+                                            <input type="file" class="form-control" id="importDbFile" accept=".json">
+                                            <button class="btn btn-outline-danger" id="importDbButton" type="button">
+                                                <i class="ti ti-file-import me-1"></i> <span data-translate="button.data.import">Import Database</span>
+                                            </button>
+                                        </div>
+                                        <small class="form-hint mt-1" data-translate="form.hint.importFileSelect">Select a `.json` file previously exported from this application.</small>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div id="loadingError" class="alert alert-danger mt-3" style="display: none;"></div>
+                    <div id="successMessage" class="alert alert-success mt-3" style="display: none;"></div>
+                </div>
+            </div>
+
+            <!-- Footer -->
+            <footer class="footer footer-transparent d-print-none">
+                <div class="container-xl">
+                    <div class="row text-center align-items-center flex-row-reverse">
+                        <div class="col-12 col-lg-auto mt-3 mt-lg-0">
+                            <ul class="list-inline list-inline-dots mb-0">
+                                <li class="list-inline-item" id="footerCopyrightText">
+                                    <!-- Text will be set by JS -->
+                                </li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </footer>
+        </div>
+    </div>
+
+    <!-- IMPORTANT: Include translations.js before your main script block -->
+    <script src="js/translations.js"></script>
+    <script>
+        const CURRENT_TEACHER_ID_KEY = 'currentTeacherId';
+        let currentTeacher = null;
+        // db is global, defined in teachersdataapi.js and initialized there
+
+        // Helper function to get translated strings
+        function getString(key, dynamicValues = {}) {
+            if (typeof MIALAMA_TEACHER_TRANSLATIONS_AR !== 'object' || MIALAMA_TEACHER_TRANSLATIONS_AR === null) {
+                console.error("MIALAMA_TEACHER_TRANSLATIONS_AR is not available.");
+                return `Missing translations: ${key}`;
+            }
+            let translation = MIALAMA_TEACHER_TRANSLATIONS_AR[key];
+            if (translation) {
+                return translation.replace(/\{\{(\w+)\}\}/g, (match, placeholderName) => {
+                    return dynamicValues[placeholderName] !== undefined ? dynamicValues[placeholderName] : match;
+                });
+            }
+            console.warn(`Translation key "${key}" not found for language 'ar'. Using key as fallback.`);
+            return key; 
+        }
+        
+        document.addEventListener('DOMContentLoaded', async function() {
+            // Set language and direction
+            if (typeof setDocumentLanguageAndDirection === 'function') {
+                setDocumentLanguageAndDirection('ar');
+            } else {
+                console.warn('setDocumentLanguageAndDirection function not found.');
+            }
+            
+            // Apply initial translations to static content
+            // Dynamic content translations will be handled after data is loaded.
+            if (typeof applyTranslations === 'function') {
+                applyTranslations('ar');
+            } else {
+                console.warn('applyTranslations function not found.');
+            }
+
+            document.getElementById('footerCopyrightText').innerHTML = getString("footer.copyrightText", { year: new Date().getFullYear() });
+
+
+            try {
+                await initializeDatabase(); // This initializes the global 'db' variable
+                console.log(getString("console.dbInitProfilePage"));
+
+                const teacherId = localStorage.getItem(CURRENT_TEACHER_ID_KEY);
+                if (!teacherId) {
+                    alert(getString("alert.noTeacherInfoSetup")); // Reusing key
+                    window.location.href = 'setup.html';
+                    return;
+                }
+                currentTeacher = await getTeacher(teacherId);
+                if (!currentTeacher) {
+                    alert(getString("alert.teacherProfileNotFoundSetup")); // Reusing key
+                    localStorage.removeItem(CURRENT_TEACHER_ID_KEY);
+                    window.location.href = 'setup.html';
+                    return;
+                }
+                
+                updateUserUI(currentTeacher);
+                populateProfileForm(currentTeacher);
+
+                // Re-apply translations with dynamic data if needed
+                if (typeof applyTranslations === 'function') {
+                    applyTranslations('ar', { teacherName: currentTeacher.full_name });
+                }
+
+            } catch (error) {
+                console.error(getString("error.profile.loading", {errorMessage: error.message + (error.stack ? `\n${error.stack}` : '')}));
+                showError(getString("error.profile.loading", {errorMessage: error.message}));
+            }
+
+            document.getElementById('profileUpdateForm').addEventListener('submit', handleProfileUpdate);
+            document.getElementById('exportDbButton').addEventListener('click', handleExportDatabase);
+            document.getElementById('importDbButton').addEventListener('click', handleImportDatabase);
+        });
+
+        function updateUserUI(teacher) {
+            document.getElementById('teacherNameDisplay').textContent = teacher.full_name;
+            const initials = teacher.full_name.split(' ').map(n => n[0]).join('').substring(0,2).toUpperCase();
+            document.getElementById('userAvatar').textContent = initials;
+            document.getElementById('logoutButton').addEventListener('click', function(e) {
+                e.preventDefault();
+                if (confirm(getString("confirm.logout"))) { // Reusing key
+                    localStorage.removeItem(CURRENT_TEACHER_ID_KEY);
+                    window.location.href = 'setup.html';
+                }
+            });
+        }
+
+        function populateProfileForm(teacher) {
+            document.getElementById('teacherFullName').value = teacher.full_name;
+            document.getElementById('teacherEmail').value = teacher.email;
+        }
+
+        async function handleProfileUpdate(event) {
+            event.preventDefault();
+            hideMessages();
+
+            const fullName = document.getElementById('teacherFullName').value.trim();
+            const email = document.getElementById('teacherEmail').value.trim();
+
+            if (!fullName || !email) {
+                showError(getString("alert.fullNameAndEmailRequired"));
+                return;
+            }
+
+            if (email !== currentTeacher.email) {
+                const existingTeacherByNewEmail = await db.teachers.where('email').equals(email).first();
+                if (existingTeacherByNewEmail && existingTeacherByNewEmail.teacher_id !== currentTeacher.teacher_id) {
+                    showError(getString("alert.emailInUseAnotherProfile"));
+                    return;
+                }
+            }
+
+            const updates = {
+                full_name: fullName,
+                email: email,
+            };
+
+            try {
+                const updatedTeacher = await addTeacher({ ...currentTeacher, ...updates }); 
+                
+                if (updatedTeacher && updatedTeacher.teacher_id) {
+                    currentTeacher = updatedTeacher; 
+                    showSuccess(getString("alert.teacherInfoUpdatedSuccess"));
+                    updateUserUI(currentTeacher); 
+                    populateProfileForm(currentTeacher); 
+                    // Re-apply translations with updated teacherName
+                    if (typeof applyTranslations === 'function') {
+                        applyTranslations('ar', { teacherName: currentTeacher.full_name });
+                    }
+                } else {
+                     showError(getString("alert.teacherInfoUpdateFailed"));
+                }
+            } catch (error) {
+                console.error(getString("error.profile.updating", {errorMessage: error.message}), error);
+                showError(getString("error.profile.updating", {errorMessage: error.message}));
+            }
+        }
+        
+        function showError(message) {
+            const errorDiv = document.getElementById('loadingError');
+            errorDiv.textContent = message; // Message is already translated
+            errorDiv.style.display = 'block';
+            document.getElementById('successMessage').style.display = 'none';
+        }
+
+        function showSuccess(message) {
+            const successDiv = document.getElementById('successMessage');
+            successDiv.textContent = message; // Message is already translated
+            successDiv.style.display = 'block';
+            document.getElementById('loadingError').style.display = 'none';
+        }
+
+        function hideMessages() {
+            document.getElementById('loadingError').style.display = 'none';
+            document.getElementById('successMessage').style.display = 'none';
+        }
+
+        // --- Data Management Functions ---
+        async function handleExportDatabase() {
+            hideMessages();
+            if (typeof exportFullDatabase === 'function') {
+                if (!db) {
+                    showError("Database is not initialized. Cannot export.");
+                    return;
+                }
+                // The exportFullDatabase function now shows its own success/error alerts.
+                await exportFullDatabase(db); 
+            } else {
+                showError("Export functionality is not available. (exportFullDatabase function missing)");
+                console.error("exportFullDatabase function not found. Make sure export_utils.js is loaded.");
+            }
+        }
+
+        async function handleImportDatabase() {
+            hideMessages();
+            const fileInput = document.getElementById('importDbFile');
+            const file = fileInput.files[0];
+
+            if (!file) {
+                showError("Please select a JSON file to import.");
+                return;
+            }
+
+            if (!file.name.endsWith('.json')) {
+                showError("Invalid file type. Please select a .json file.");
+                return;
+            }
+
+            const confirmation = confirm(
+                "WARNING: Importing this file will completely overwrite ALL existing data in your application (teachers, classes, students, progress, etc.). This action CANNOT BE UNDONE.\n\n" +
+                "Are you absolutely sure you want to proceed?"
+            );
+
+            if (!confirmation) {
+                showSuccess("Import cancelled by user."); // Use success for non-error messages
+                fileInput.value = ''; // Reset file input
+                return;
+            }
+            
+
+
+            const reader = new FileReader();
+            reader.onload = async function(event) {
+                const jsonDataString = event.target.result;
+                if (typeof importDatabaseFromJson === 'function') {
+                    if (!db) {
+                        showError("Database is not initialized. Cannot import.");
+                        return;
+                    }
+                    const importSuccessful = await importDatabaseFromJson(db, jsonDataString);
+                    if (importSuccessful) {
+                        // Re-seed program data if it wasn't part of the import or if tables are empty
+                        await seedInitialProgramDataIfNeeded(); 
+                        
+                        showSuccess("Database imported successfully! It's recommended to refresh the application or log out and log back in to ensure all changes are reflected.");
+                        // Potentially force a reload or redirect to setup if current user is affected
+                        // For now, just a message.
+                        localStorage.removeItem(CURRENT_TEACHER_ID_KEY); // Clear current teacher session
+                        alert("Import complete. Your session has been cleared. Please refresh the page and set up your teacher profile again if needed, or log in if your profile was part of the import.");
+                        window.location.reload(); // Force reload
+                    } else {
+                        showError("Database import failed. Check the console for more details.");
+                    }
+                } else {
+                    showError("Import functionality is not available. (importDatabaseFromJson function missing)");
+                    console.error("importDatabaseFromJson function not found. Make sure export_utils.js is loaded.");
+                }
+                fileInput.value = ''; // Reset file input
+            };
+            reader.onerror = function() {
+                showError("Error reading the selected file.");
+                fileInput.value = ''; // Reset file input
+            };
+            reader.readAsText(file);
+        }
+
+     </script>
+</body>
+</html>

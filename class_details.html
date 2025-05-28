@@ -1,0 +1,1102 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title data-translate="page.classDetails.title">Class Details - Mialama Platform</title>
+
+    <script src="https://cdn.jsdelivr.net/npm/dexie@3.2.4/dist/dexie.min.js"></script>
+    <script src="js/teachersdataapi.js"></script>
+    <script src="js/export_utils.js"></script>
+
+    <script src="https://cdn.jsdelivr.net/npm/@tabler/core@1.1.1/dist/js/tabler.min.js"></script>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/core@1.1.1/dist/css/tabler.min.css" />
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css">
+    <style>
+        .lesson-card { margin-bottom: 1rem; }
+        /* Tabler uses dir="rtl" for these, but explicit for clarity if needed */
+        .implemented-true { border-right: 5px solid var(--tblr-green); border-left: 0; }
+        .implemented-false { border-right: 5px solid var(--tblr-orange); border-left: 0; }
+        .student-actions .btn { margin-right: 0.25rem; margin-left: 0; } /* Adjusted for RTL */
+
+        .accordion-header {
+            margin: 0;
+            position: relative;
+            display: flex;
+            gap: 1rem;
+            align-items: center;
+            width: 100%;
+            color: var(--tblr-accordion-btn-color);
+            text-align: right; /* Explicitly right for RTL */
+            background-color: transparent;
+            border: 0;
+            overflow-anchor: none;
+            transition: transform .3s;
+        }
+
+        .accordion-button {
+            position: relative;
+            display: flex;
+            align-items: center;
+            width: 100%;
+            padding: var(--tblr-accordion-btn-padding-y) var(--tblr-accordion-padding-x);
+            color: inherit;
+            text-align: inherit; /* Should inherit from .accordion-header */
+            background-color: transparent;
+            border: 0;
+            font-size: inherit;
+            font-weight: var(--tblr-accordion-btn-font-weight);
+            gap: .75rem;
+        }
+
+        .accordion-button:not(.collapsed) .accordion-button-toggle {
+            transform: rotate(180deg); /* Tabler should handle this with dir="rtl" */
+            color: var(--tblr-accordion-active-color);
+        }
+        /* Tabler's RTL CSS should handle pushing the toggle icon to the left */
+    </style>
+</head>
+<body data-bs-theme="light">
+    <div class="page">
+        <!-- Navbar -->
+        <header class="navbar navbar-expand-md navbar-light d-print-none">
+            <div class="container-xl">
+                <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar-menu">
+                    <span class="navbar-toggler-icon"></span>
+                </button>
+                <div class="navbar-brand navbar-brand-autodark d-none-navbar-horizontal pe-0 pe-md-3">
+                    <a href="./index.html">
+                        <img src="./Sources/imgs/logo.png" height="36" alt="Mialama Platform" class="navbar-brand-image" data-translate-alt="alt.logo.mialamaPlatform">
+                    </a>
+                </div>
+                <div class="collapse navbar-collapse" id="navbar-menu">
+                    <div class="d-flex flex-column flex-md-row flex-fill align-items-stretch align-items-md-center">
+                        <ul class="navbar-nav">
+                            <li class="nav-item active"> <!-- Removed 'active' class -->
+                                <a class="nav-link" href="./index.html">
+                                    <span class="nav-link-icon d-md-none d-lg-inline-block">
+                                        <i class="ti ti-home"></i>
+                                    </span>
+                                    <span class="nav-link-title" data-translate="nav.dashboard">Dashboard</span>
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link" href="./program_explorer.html">
+                                     <span class="nav-link-icon d-md-none d-lg-inline-block">
+                                        <i class="ti ti-book"></i>
+                                    </span>
+                                    <span class="nav-link-title" data-translate="nav.programExplorer">Program Explorer</span>
+                                </a>
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+                <div class="navbar-nav flex-row order-md-last">
+                    <div class="nav-item dropdown">
+                        <a href="#" class="nav-link d-flex lh-1 text-reset p-0" data-bs-toggle="dropdown" data-translate-aria-label="aria.openUserMenu" aria-label="Open user menu">
+                            <span class="avatar avatar-sm" id="userAvatar"></span>
+                            <div class="d-none d-xl-block ps-2">
+                                <div id="teacherNameDisplay">Teacher Name</div>
+                                <div class="mt-1 small text-secondary" data-translate="text.teacherRole">Teacher</div>
+                            </div>
+                        </a>
+                        <div class="dropdown-menu dropdown-menu-end dropdown-menu-arrow">
+                            <a href="./profile.html" class="dropdown-item"><i class="ti ti-user-circle icon me-2"></i><span data-translate="dropdown.profile">Profile</span></a>
+                            <a href="./setup.html" class="dropdown-item"><i class="ti ti-settings icon me-2"></i><span data-translate="dropdown.appSetup">Application Setup</span></a>
+                            <a href="#" class="dropdown-item" id="logoutButton"><i class="ti ti-logout icon me-2"></i><span data-translate="dropdown.logout">Logout</span></a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </header>
+
+        <div class="page-wrapper">
+            <!-- Page header -->
+            <div class="page-header d-print-none">
+                <div class="container-xl">
+                    <div class="row g-2 align-items-center">
+                        <div class="col">
+                            <nav aria-label="breadcrumb">
+                                <ol class="breadcrumb">
+                                    <li class="breadcrumb-item"><a href="index.html" data-translate="breadcrumb.dashboard">Dashboard</a></li>
+                                    <li class="breadcrumb-item active" aria-current="page" id="classNameBreadcrumb" data-translate="breadcrumb.classDetails.active">Class Details</li>
+                                </ol>
+                            </nav>
+                            <h2 hidden="hidden" class="page-title" id="pageTitle" data-translate="page.classDetails.loadingTitle">
+                                Loading Class Details...
+                            </h2>
+                            <div class="text-secondary mt-1" id="classSubHeader"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <!-- Page body -->
+            <div class="page-body">
+                <div class="container-xl">
+                    <div id="successMessage" class="alert alert-success" style="display: none;"></div>
+                    <div id="errorMessage" class="alert alert-danger" style="display: none;"></div>
+                    
+                    <div id="classDetailsContent" style="display: none;">
+                        <div class="card">
+                            <ul class="nav nav-tabs nav-fill" data-bs-toggle="tabs">
+                                <li class="nav-item">
+                                    <a href="#tab-students" class="nav-link active" data-bs-toggle="tab">
+                                        <i class="ti ti-users me-2"></i><span  id="studentsTabTitle">Students (0)</span>
+                                    </a>
+                                </li>
+                                <li class="nav-item">
+                                    <a href="#tab-program-reading" class="nav-link" data-bs-toggle="tab">
+                                        <i class="ti ti-book-2 me-2"></i><span data-translate="tab.programReading">Reading Program</span>
+                                    </a>
+                                </li>
+                                <li class="nav-item">
+                                    <a href="#tab-program-numeracy" class="nav-link" data-bs-toggle="tab">
+                                        <i class="ti ti-calculator me-2"></i><span data-translate="tab.programNumeracy">Numeracy Program</span>
+                                    </a>
+                                </li>
+                                <li class="nav-item">
+                                    <a href="#tab-class-summary" class="nav-link" data-bs-toggle="tab">
+                                        <i class="ti ti-chart-infographic me-2"></i><span data-translate="tab.classSummary">Class Summary</span>
+                                    </a>
+                                </li>
+                            </ul>
+                            <div class="card-body">
+                                <div class="tab-content">
+                                    <!-- Students Tab -->
+                                    <div class="tab-pane active show" id="tab-students">
+                                        <h4 id="studentsTabHeader" data-translate="studentsTab.title">Students in this class</h4>
+                                        <div class="d-flex justify-content-between align-items-center mb-3">
+                                            <button class="btn btn-outline-secondary" id="exportStudentsButton">
+                                                <i class="ti ti-file-export me-1"></i> <span data-translate="button.exportStudentsCSV">Export Student List (CSV)</span>
+                                            </button>
+                                            <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addStudentModal">
+                                                <i class="ti ti-user-plus me-1"></i> <span data-translate="button.addStudent">Add Student</span>
+                                            </button>
+                                        </div>
+                                        <div id="studentListTableContainer" class="table-responsive">
+                                            <p id="noStudentsMessage" style="display: none;" data-translate="text.noStudentsMessage">No students added to this class yet.</p>
+                                            <table class="table table-vcenter card-table" id="studentListTable" style="display:none;">
+                                                <thead>
+                                                    <tr>
+                                                        <th data-translate="table.header.name">Name</th>
+                                                        <th data-translate="table.header.dob">Date of Birth</th>
+                                                        <th data-translate="table.header.gender">Gender</th>
+                                                        <th class="w-1 text-end" data-translate="table.header.actions">Actions</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody id="studentListBody">
+                                                    <!-- Student rows will be inserted here -->
+                                                </tbody>
+                                            </table>
+                                        </div>
+                                    </div>
+
+                                    <!-- Reading Program Tab -->
+                                    <div class="tab-pane" id="tab-program-reading">
+                                        <h4 data-translate="programTab.reading.title">Reading Program Implementation</h4>
+                                        <div id="readingProgramUnits" class="mt-3">
+                                            <!-- Reading program units and lessons will be loaded here -->
+                                        </div>
+                                    </div>
+
+                                    <!-- Numeracy Program Tab -->
+                                    <div class="tab-pane" id="tab-program-numeracy">
+                                        <h4 data-translate="programTab.numeracy.title">Numeracy Program Implementation</h4>
+                                        <div id="numeracyProgramUnits" class="mt-3">
+                                            <!-- Numeracy program units and lessons will be loaded here -->
+                                        </div>
+                                    </div>
+
+                                     <!-- Class Summary Tab -->
+                                    <div class="tab-pane" id="tab-class-summary">
+                                        <h4 id="classSummaryTabHeader" data-translate="summaryTab.title">Class Progress Summary for this class</h4>
+                                        
+                                        <div class="summary-section mt-3">
+                                            <h5 class="mb-3" data-translate="card.lessonImplementation.title">Lesson Implementation Progress</h5>
+                                            <div class="row">
+                                                <div class="col-md-6 mb-3">
+                                                    <h6><i class="ti ti-book-2 me-1"></i><span data-translate="program.reading.title">Reading Program</span></h6>
+                                                    <div id="readingProgressStats">
+                                                        <p><span data-translate="text.totalLessons">Total Lessons:</span> <span id="readingTotalLessons">0</span></p>
+                                                        <p><span data-translate="summaryTab.lessonImplementation.completedLessons">Completed Lessons:</span> <span id="readingImplementedLessons">0</span></p>
+                                                        <div class="progress progress-sm">
+                                                            <div id="readingProgressBar" class="progress-bar" role="progressbar" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100" style="width: 0%;"></div>
+                                                        </div>
+                                                        <p class="mt-1"><strong id="readingProgressPercent">0%</strong> <span data-translate="summaryTab.lessonImplementation.completedPercentSuffix">Completed</span></p>
+                                                    </div>
+                                                </div>
+                                                <div class="col-md-6 mb-3">
+                                                    <h6><i class="ti ti-calculator me-1"></i><span data-translate="program.numeracy.title">Numeracy Program</span></h6>
+                                                    <div id="numeracyProgressStats">
+                                                        <p><span data-translate="text.totalLessons">Total Lessons:</span> <span id="numeracyTotalLessons">0</span></p>
+                                                        <p><span data-translate="summaryTab.lessonImplementation.completedLessons">Completed Lessons:</span> <span id="numeracyImplementedLessons">0</span></p>
+                                                        <div class="progress progress-sm">
+                                                            <div id="numeracyProgressBar" class="progress-bar" role="progressbar" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100" style="width: 0%;"></div>
+                                                        </div>
+                                                        <p class="mt-1"><strong id="numeracyProgressPercent">0%</strong> <span data-translate="summaryTab.lessonImplementation.completedPercentSuffix">Completed</span></p>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <div class="summary-section">
+                                            <div class="d-flex justify-content-between align-items-center mb-3">
+                                                <h5 class="mb-0" data-translate="card.recentActivity.title">Recent Activity Performance</h5>
+                                                <select id="recentLessonsFilter" class="form-select form-select-sm w-auto">
+                                                    <option value="5" data-translate="filter.last5Implemented">Last 5 Implemented Lessons</option>
+                                                    <option value="10" data-translate="filter.last10Implemented">Last 10 Implemented Lessons</option>
+                                                    <option value="all" data-translate="filter.allImplemented">All Implemented Lessons</option>
+                                                </select>
+                                            </div>
+                                            <div id="recentActivityPerformanceContainer">
+                                                <p class="text-muted" data-translate="text.loadingRecentActivity">Loading recent activity performance...</p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div id="loadingErrorPage" class="alert alert-danger" style="display: none;"></div> <!-- Renamed to avoid conflict with success/error message divs -->
+                </div>
+            </div>
+
+            <!-- Footer -->
+            <footer class="footer footer-transparent d-print-none">
+                <div class="container-xl">
+                    <div class="row text-center align-items-center flex-row-reverse">
+                        <div class="col-12 col-lg-auto mt-3 mt-lg-0">
+                            <ul class="list-inline list-inline-dots mb-0">
+                                <li class="list-inline-item" id="footerCopyrightText">
+                                    <!-- Text will be set by JS -->
+                                </li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </footer>
+        </div>
+    </div>
+
+    <!-- Add Student Modal -->
+    <div class="modal modal-blur fade" id="addStudentModal" tabindex="-1" data-translate-aria-labelledby="modal.addStudent.title" aria-labelledby="addStudentModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="addStudentModalLabel" data-translate="modal.addStudent.title">Add New Student</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" data-translate-aria-label="aria.closeButton" aria-label="Close"></button>
+                </div>
+                <form id="addStudentForm">
+                    <div class="modal-body">
+                        <div class="mb-3">
+                            <label class="form-label required" data-translate="form.label.fullName">Full Name</label>
+                            <input type="text" class="form-control" id="studentFullName" data-translate-placeholder="form.placeholder.studentFullName" placeholder="Enter student's full name" required>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label" data-translate="form.label.dob">Date of Birth</label>
+                            <input type="date" class="form-control" id="studentDOB">
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label" data-translate="form.label.gender">Gender</label>
+                            <select class="form-select" id="studentGender">
+                                <option value="" data-translate="form.select.gender.default">Select Gender</option>
+                                <option value="Male" data-translate="form.select.gender.male">Male</option>
+                                <option value="Female" data-translate="form.select.gender.female">Female</option>
+                            </select>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label" data-translate="form.label.parentContact">Parent Contact Info (Optional)</label>
+                            <textarea class="form-control" id="studentParentContact" rows="2" data-translate-placeholder="form.placeholder.parentContact" placeholder="e.g., Phone, Email"></textarea>
+                        </div>
+                         <input type="hidden" id="studentClassId">
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn me-auto" data-bs-dismiss="modal" data-translate="cancel">Cancel</button>
+                        <button type="submit" class="btn btn-primary" data-translate="button.addStudent.submit">Add Student</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Edit Student Modal -->
+    <div class="modal modal-blur fade" id="editStudentModal" tabindex="-1" data-translate-aria-labelledby="modal.editStudent.title" aria-labelledby="editStudentModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="editStudentModalLabel" data-translate="modal.editStudent.title">Edit Student Details</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" data-translate-aria-label="aria.closeButton" aria-label="Close"></button>
+                </div>
+                <form id="editStudentForm">
+                    <input type="hidden" id="editStudentId">
+                    <div class="modal-body">
+                        <div class="mb-3">
+                            <label class="form-label required" data-translate="form.label.fullName">Full Name</label>
+                            <input type="text" class="form-control" id="editStudentFullName" data-translate-placeholder="form.placeholder.studentFullName" placeholder="Enter student's full name" required>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label" data-translate="form.label.dob">Date of Birth</label>
+                            <input type="date" class="form-control" id="editStudentDOB">
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label" data-translate="form.label.gender">Gender</label>
+                            <select class="form-select" id="editStudentGender">
+                                <option value="" data-translate="form.select.gender.default">Select Gender</option>
+                                <option value="Male" data-translate="form.select.gender.male">Male</option>
+                                <option value="Female" data-translate="form.select.gender.female">Female</option>
+                            </select>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label" data-translate="form.label.parentContact">Parent Contact Info (Optional)</label>
+                            <textarea class="form-control" id="editStudentParentContact" rows="2" data-translate-placeholder="form.placeholder.parentContact" placeholder="e.g., Phone, Email"></textarea>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn me-auto" data-bs-dismiss="modal" data-translate="cancel">Cancel</button>
+                        <button type="submit" class="btn btn-primary" data-translate="button.saveChanges">Save Changes</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Mark Lesson Implemented Modal -->
+    <div class="modal modal-blur fade" id="markLessonModal" tabindex="-1" data-translate-aria-labelledby="modal.markLesson.title" aria-labelledby="markLessonModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="markLessonModalLabel" data-translate="modal.markLesson.title">Mark Lesson Implementation</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" data-translate-aria-label="aria.closeButton" aria-label="Close"></button>
+                </div>
+                <form id="markLessonForm">
+                    <div class="modal-body">
+                        <p id="markLessonModalConfirmationText">You are about to mark lesson: <strong id="modalLessonTitle"></strong> as implemented for class: <strong id="modalClassName"></strong>.</p>
+                        <input type="hidden" id="modalLessonId">
+                        <input type="hidden" id="modalClassIdForLesson">
+                        <input type="hidden" id="modalProgramTypeForLesson">
+                        <div class="mb-3">
+                            <label for="implementationDate" class="form-label required" data-translate="form.label.implementationDate">Implementation Date</label>
+                            <input type="date" class="form-control" id="implementationDate" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="implementationDuration" class="form-label" data-translate="form.label.actualDuration">Actual Duration (minutes)</label>
+                            <input type="number" class="form-control" id="implementationDuration" data-translate-placeholder="form.placeholder.durationMinutes" placeholder="e.g., 45">
+                        </div>
+                        <div class="mb-3">
+                            <label for="implementationNotes" class="form-label" data-translate="form.label.notesObservations">Notes/Observations</label>
+                            <textarea class="form-control" id="implementationNotes" rows="3"></textarea>
+                        </div>
+                         <div class="form-check">
+                            <input class="form-check-input" type="checkbox" value="" id="implementationCompleted" checked>
+                            <label class="form-check-label" for="implementationCompleted" data-translate="form.checkbox.markAsCompleted">
+                                Mark as Completed
+                            </label>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn me-auto" data-bs-dismiss="modal" data-translate="cancel">Cancel</button>
+                        <button type="submit" class="btn btn-primary" data-translate="button.saveImplementation">Save Implementation</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- IMPORTANT: Include translations.js before your main script block -->
+    <script src="js/translations.js"></script>
+    <script>
+        const CURRENT_TEACHER_ID_KEY = 'currentTeacherId';
+        let currentTeacher = null;
+        let currentClassId = null;
+        let currentClassDetails = null;
+        let classLessonImplementations = {};
+        let studentsInClassForSummary = [];
+
+        // Helper function to get translated strings
+        function getString(key, dynamicValues = {}) {
+            if (typeof MIALAMA_TEACHER_TRANSLATIONS_AR !== 'object' || MIALAMA_TEACHER_TRANSLATIONS_AR === null) {
+                console.error("MIALAMA_TEACHER_TRANSLATIONS_AR is not available.");
+                return `Missing translations: ${key}`;
+            }
+            let translation = MIALAMA_TEACHER_TRANSLATIONS_AR[key];
+            if (translation) {
+                return translation.replace(/\{\{(\w+)\}\}/g, (match, placeholderName) => {
+                    return dynamicValues[placeholderName] !== undefined ? dynamicValues[placeholderName] : match;
+                });
+            }
+            console.warn(`Translation key "${key}" not found for language 'ar'. Using key as fallback.`);
+            return key; 
+        }
+
+
+        // Helper function to get translated status string
+        function getTranslatedStatus(statusKey) {
+            // Assuming statusKey is like "Completed", "In Progress", etc.
+            // We need to map it to our translation keys like "status.completed", "status.inProgress"
+            const translationKey = 'status.' + statusKey.toLowerCase().replace(/\s+/g, '');
+            return getString(translationKey) || getString('status.unknown');
+        }
+
+
+
+
+
+        document.addEventListener('DOMContentLoaded', async function() {
+            // Set language and direction
+            if (typeof setDocumentLanguageAndDirection === 'function') {
+                setDocumentLanguageAndDirection('ar');
+            } else {
+                console.warn('setDocumentLanguageAndDirection function not found.');
+            }
+            
+            // Apply initial translations to static content
+            if (typeof applyTranslations === 'function') {
+                applyTranslations('ar');
+            } else {
+                console.warn('applyTranslations function not found.');
+            }
+            
+            document.getElementById('footerCopyrightText').innerHTML = getString("footer.copyrightText", { year: new Date().getFullYear() });
+
+            const params = new URLSearchParams(window.location.search);
+            currentClassId = params.get('class_id');
+
+            if (!currentClassId) {
+                showErrorPage(getString("alert.classIdMissing"));
+                return;
+            }
+
+            try {
+                await initializeDatabase();
+                console.log(getString("console.dbInitClassDetails"));
+
+                const teacherId = localStorage.getItem(CURRENT_TEACHER_ID_KEY);
+                if (!teacherId) {
+                    alert(getString("alert.noTeacherInfo"));
+                    window.location.href = 'setup.html';
+                    return;
+                }
+                currentTeacher = await getTeacher(teacherId);
+                if (!currentTeacher) {
+                    alert(getString("alert.teacherProfileNotFound"));
+                    localStorage.removeItem(CURRENT_TEACHER_ID_KEY);
+                    window.location.href = 'setup.html';
+                    return;
+                }
+                updateUserUI(currentTeacher);
+
+                currentClassDetails = await getClassById(currentClassId);
+                if (!currentClassDetails || currentClassDetails.teacher_id !== currentTeacher.teacher_id) {
+                    showErrorPage(getString("error.classNotFoundOrPermissionDetails"));
+                    return;
+                }
+
+                // Update dynamic text elements that are not covered by data-translate initially
+                document.getElementById('pageTitle').textContent = getString("page.classDetails.titleForClass", {className: escapeHTML(currentClassDetails.class_name)});
+                document.getElementById('classNameBreadcrumb').textContent = escapeHTML(currentClassDetails.class_name); // Breadcrumb is often just the name
+                document.getElementById('classSubHeader').textContent = getString("page.classDetails.subHeader", {
+                    gradeLevel: escapeHTML(currentClassDetails.grade_level.toString()),
+                    academicYear: escapeHTML(currentClassDetails.academic_year)
+                });
+                document.querySelectorAll('.dynamicClassName').forEach(el => el.textContent = escapeHTML(currentClassDetails.class_name));
+                document.getElementById('studentsTabHeader').textContent = getString("studentsTab.title", {className: escapeHTML(currentClassDetails.class_name)});
+                document.getElementById('classSummaryTabHeader').textContent = getString("summaryTab.title", {className: escapeHTML(currentClassDetails.class_name)});
+
+
+                await loadAllClassData(); 
+                document.getElementById('classDetailsContent').style.display = 'block';
+                
+                // Re-apply translations after dynamic content might have been populated
+                if (typeof applyTranslations === 'function') {
+                    applyTranslations('ar', { 
+                        className: escapeHTML(currentClassDetails.class_name),
+                        teacherName: currentTeacher.full_name 
+                        // Add other dynamic values used in data-translate attributes if any
+                    });
+                }
+
+
+            } catch (error) {
+                console.error(getString("error.loadingClassDetails", {errorMessage: error.message}), error);
+                showErrorPage(getString("error.loadingClassDetails", { errorMessage: error.message + (error.stack ? `\n${error.stack}` : '') }));
+            }
+
+            // Event Listeners
+            document.getElementById('addStudentForm').addEventListener('submit', handleAddStudent);
+            document.getElementById('editStudentForm').addEventListener('submit', handleUpdateStudent);
+            document.getElementById('markLessonForm').addEventListener('submit', handleMarkLessonImplemented);
+            document.getElementById('exportStudentsButton').addEventListener('click', handleExportStudents);
+            document.getElementById('recentLessonsFilter').addEventListener('change', loadRecentActivityPerformanceSummary);
+
+
+            const markLessonModalEl = document.getElementById('markLessonModal');
+            markLessonModalEl.addEventListener('show.bs.modal', function (event) {
+                const button = event.relatedTarget;
+                const lessonId = button.getAttribute('data-lesson-id');
+                const lessonTitle = button.getAttribute('data-lesson-title');
+                const programType = button.getAttribute('data-program-type');
+
+                document.getElementById('modalLessonTitle').textContent = lessonTitle;
+                document.getElementById('modalClassName').textContent = currentClassDetails.class_name;
+                document.getElementById('markLessonModalConfirmationText').innerHTML = getString("modal.markLesson.confirmText", {
+                    lessonTitle: `<strong>${escapeHTML(lessonTitle)}</strong>`,
+                    className: `<strong>${escapeHTML(currentClassDetails.class_name)}</strong>`
+                });
+
+                document.getElementById('modalLessonId').value = lessonId;
+                document.getElementById('modalClassIdForLesson').value = currentClassId;
+                document.getElementById('modalProgramTypeForLesson').value = programType;
+                document.getElementById('implementationDate').valueAsDate = new Date();
+                document.getElementById('implementationDuration').value = '';
+                document.getElementById('implementationNotes').value = '';
+                document.getElementById('implementationCompleted').checked = true;
+            });
+        });
+
+        function displayMessage(message, type = "success", isSticky = false) {
+            const successDiv = document.getElementById('successMessage');
+            const errorDiv = document.getElementById('errorMessage');
+            
+            successDiv.style.display = 'none';
+            errorDiv.style.display = 'none';
+
+            const targetDiv = type === "success" ? successDiv : errorDiv;
+            targetDiv.textContent = message; // Message is already translated by caller
+            targetDiv.style.display = 'block';
+
+            if (!isSticky) {
+                setTimeout(() => {
+                    targetDiv.style.display = 'none';
+                }, 3000);
+            }
+        }
+
+        function updateUserUI(teacher) {
+            document.getElementById('teacherNameDisplay').textContent = teacher.full_name;
+            const initials = teacher.full_name.split(' ').map(n => n[0]).join('').substring(0,2).toUpperCase();
+            document.getElementById('userAvatar').textContent = initials;
+            document.getElementById('logoutButton').addEventListener('click', function(e) {
+                e.preventDefault();
+                if (confirm(getString("confirm.logout"))) {
+                    localStorage.removeItem(CURRENT_TEACHER_ID_KEY);
+                    window.location.href = 'setup.html';
+                }
+            });
+        }
+
+        function showErrorPage(message) { // Renamed from showError to avoid conflict
+            const errorDiv = document.getElementById('loadingErrorPage'); // Use the new ID
+            errorDiv.textContent = message; // Message is already translated
+            errorDiv.style.display = 'block';
+            document.getElementById('pageTitle').textContent = getString("page.title.error");
+            const classDetailsContent = document.getElementById('classDetailsContent');
+            if(classDetailsContent) classDetailsContent.style.display = 'none';
+        }
+
+        async function loadAllClassData() {
+            await loadStudents(); 
+            await fetchClassLessonImplementations();
+            await loadProgramUnitsAndLessons('Reading', 'readingProgramUnits');
+            await loadProgramUnitsAndLessons('Numeracy', 'numeracyProgramUnits');
+            await loadClassSummaryData(); 
+        }
+
+        async function fetchClassLessonImplementations() {
+            const implementations = await getImplementationsForClass(currentClassId);
+            classLessonImplementations = {};
+            implementations.forEach(impl => {
+                classLessonImplementations[impl.lesson_id] = impl.completed;
+            });
+        }
+
+        async function loadStudents() {
+            const students = await getStudentsInClass(currentClassId);
+            studentsInClassForSummary = students; 
+            const studentListBody = document.getElementById('studentListBody');
+            const studentCountSpan = document.getElementById('studentsTabTitle'); // Target the span inside the tab title
+            const noStudentsMessage = document.getElementById('noStudentsMessage');
+            const studentListTable = document.getElementById('studentListTable');
+
+            studentListBody.innerHTML = ''; 
+            studentCountSpan.textContent = getString("tab.students", {count: students.length});
+
+
+            if (students.length > 0) {
+                noStudentsMessage.style.display = 'none';
+                studentListTable.style.display = '';
+                students.forEach(student => {
+                    const studentNameEscaped = escapeJS(student.full_name); 
+                    // *** MODIFICATION FOR GENDER TRANSLATION ***
+                    const translatedGender = student.gender ? getString('student.' + student.gender) : getString("text.notApplicable");                  
+                    const row = `
+                        <tr>
+                            <td>${escapeHTML(student.full_name)}</td>
+                            <td>${student.date_of_birth ? escapeHTML(new Date(student.date_of_birth).toLocaleDateString('en-GB')) : getString("text.notApplicable")}</td>
+                           <td>${escapeHTML(translatedGender)}</td>
+                            <td class="student-actions text-end">
+                                <a href="student_progress.html?student_id=${student.student_id}&class_id=${currentClassId}" class="btn btn-sm btn-outline-primary" title="${getString("tooltip.viewProgress")}">
+                                    <i class="ti ti-chart-bar"></i>
+                                </a>
+                                <button class="btn btn-sm btn-outline-secondary" title="${getString("tooltip.editStudent")}" onclick="openEditStudentModal('${student.student_id}')">
+                                    <i class="ti ti-edit"></i>
+                                </button>
+                                <button class="btn btn-sm btn-outline-danger" title="${getString("tooltip.deleteStudent")}" onclick="confirmDeleteStudent('${student.student_id}', '${studentNameEscaped}')">
+                                    <i class="ti ti-trash"></i>
+                                </button>
+                            </td>
+                        </tr>
+                    `;
+                    studentListBody.insertAdjacentHTML('beforeend', row);
+                });
+            } else {
+                noStudentsMessage.style.display = 'block';
+                studentListTable.style.display = 'none';
+            }
+        }
+
+        async function handleAddStudent(event) {
+            event.preventDefault();
+            const studentFullName = document.getElementById('studentFullName').value.trim();
+            const studentDOB = document.getElementById('studentDOB').value;
+            const studentGender = document.getElementById('studentGender').value;
+            const studentParentContact = document.getElementById('studentParentContact').value.trim();
+
+            if (!studentFullName) {
+                displayMessage(getString("alert.studentNameRequired"), "error");
+                return;
+            }
+
+            const studentData = {
+                class_id: currentClassId,
+                full_name: studentFullName,
+                date_of_birth: studentDOB ? new Date(studentDOB) : null,
+                gender: studentGender,
+                parent_contact_info: studentParentContact,
+                enrollment_date: new Date()
+            };
+           
+            try {
+                await addStudent(studentData);
+                displayMessage(getString("alert.studentAddedSuccess"), "success");
+                document.getElementById('addStudentForm').reset();
+                var addModalInstance = bootstrap.Modal.getInstance(document.getElementById('addStudentModal'));
+                if (addModalInstance) addModalInstance.hide();
+                await loadStudents(); 
+                await loadClassSummaryData(); // Refresh summary if student count changes 
+            } catch (error) {
+                console.error(getString("error.addingStudent", {errorMessage: error.message}), error);
+                displayMessage(getString("error.addingStudent", {message: error.message}), "error");
+            }
+        }
+
+        async function openEditStudentModal(studentId) {
+            try {
+                const student = await getStudentById(studentId);
+                if (!student) {
+                    displayMessage(getString("error.studentDetailsNotFound"), "error");
+                    return;
+                }
+                document.getElementById('editStudentId').value = student.student_id;
+                document.getElementById('editStudentFullName').value = student.full_name;
+                document.getElementById('editStudentDOB').value = student.date_of_birth ? new Date(student.date_of_birth).toISOString().split('T')[0] : '';
+                document.getElementById('editStudentGender').value = student.gender || '';
+                document.getElementById('editStudentParentContact').value = student.parent_contact_info || '';
+
+                var editModal = new bootstrap.Modal(document.getElementById('editStudentModal'));
+                editModal.show();
+            } catch (error) {
+                console.error(getString("error.preparingStudentEdit", {errorMessage: error.message}), error);
+                displayMessage(getString("error.preparingStudentEdit", {message: error.message}), "error");
+            }
+        }
+
+        async function handleUpdateStudent(event) {
+            event.preventDefault();
+            const studentIdToUpdate = document.getElementById('editStudentId').value;
+            const fullName = document.getElementById('editStudentFullName').value.trim();
+            const dob = document.getElementById('editStudentDOB').value;
+            const gender = document.getElementById('editStudentGender').value;
+            const parentContact = document.getElementById('editStudentParentContact').value.trim();
+
+            if (!fullName) {
+                displayMessage(getString("alert.studentNameRequired"), "error"); // Re-use if appropriate
+                return;
+            }
+             const updates = {
+                full_name: fullName,
+                date_of_birth: dob ? new Date(dob) : null,
+                gender: gender,
+                parent_contact_info: parentContact
+            }; 
+
+
+            try {
+                await updateStudent(studentIdToUpdate, updates);
+                displayMessage(getString("alert.studentUpdatedSuccess"), "success");
+                 var editModalInstance = bootstrap.Modal.getInstance(document.getElementById('editStudentModal'));
+                if (editModalInstance) editModalInstance.hide();
+                await loadStudents();
+                await loadClassSummaryData();
+            } catch (error) {
+                console.error(getString("error.updatingStudent", {errorMessage: error.message}), error);
+                displayMessage(getString("error.updatingStudent", {message: error.message}), "error");
+            }
+        }
+
+        async function confirmDeleteStudent(studentId, studentName) {
+            if (confirm(getString("confirm.deleteStudent", {studentName: studentName}))) {
+                try {
+                    await deleteStudent(studentId); 
+                    displayMessage(getString("alert.studentDeletedSuccess", {studentName: studentName}), "success");
+                    await loadStudents();
+                    await loadClassSummaryData(); 
+                } catch (error) {
+                    console.error(getString("error.deletingStudent", {errorMessage: error.message}), error);
+                    displayMessage(getString("error.deletingStudent", {message: error.message}), "error");
+                }
+            }
+        }
+
+        async function loadProgramUnitsAndLessons(programType, containerId) {
+            const container = document.getElementById(containerId);
+            container.innerHTML = `<div class="text-center p-3"><div class="spinner-border spinner-border-sm" role="status"></div> ${getString("text.loadingProgramUnits", {programType: programType})}</div>`;
+
+            try {
+                const units = await getProgramUnits(programType);
+                if (units.length === 0) {
+                    container.innerHTML = `<p class="text-muted">${getString("text.noProgramUnitsFound", {programType: programType})}</p>`;
+                    return;
+                }
+
+                let unitsHtml = '<div class="accordion" id="accordion-' + programType.toLowerCase() + '">';
+                for (const unit of units) {
+                    const lessons = await getLessonsForUnit(unit.unit_id);
+                    let lessonsHtml = '<ul class="list-group list-group-flush">';
+                    if (lessons.length > 0) {
+                        for (const lesson of lessons) {
+                            const isImplemented = classLessonImplementations[lesson.lesson_id] === true;
+                            const implementedClass = isImplemented ? 'implemented-true' : 'implemented-false';
+                            const implementedText = isImplemented ? getString("lesson.status.completed") : getString("lesson.status.notStarted");
+                            const buttonTextKey = isImplemented ? "button.viewEditImplementation" : "button.markImplemented";
+                            const buttonClass = isImplemented ? 'btn-outline-success' : 'btn-outline-primary';
+
+                            lessonsHtml += `
+                                <li class="list-group-item lesson-card ${implementedClass}">
+                                    <div class="d-flex justify-content-between align-items-center">
+                                        <div>
+                                            <strong>${escapeHTML(lesson.lesson_title_ar)}</strong> (${getString("text.sequenceLabel", {sequenceNumber: lesson.lesson_sequence_in_unit})})
+                                            <small class="d-block text-muted">${getString("lesson.statusLabel")} ${implementedText}</small>
+                                        </div>
+                                        <div>
+                                            <button class="btn btn-sm ${buttonClass} me-2"
+                                                    data-bs-toggle="modal" data-bs-target="#markLessonModal"
+                                                    data-lesson-id="${lesson.lesson_id}"
+                                                    data-lesson-title="${escapeHTML(lesson.lesson_title_ar)}"
+                                                    data-program-type="${programType}">
+                                                <i class="ti ti-check me-1"></i> ${getString(buttonTextKey)}
+                                            </button>
+                                            <a href="lesson_view.html?lesson_id=${lesson.lesson_id}&class_id=${currentClassId}" class="btn btn-sm btn-info">
+                                                <i class="ti ti-eye me-1"></i> ${getString("button.viewLessonActivities")}
+                                            </a>
+                                        </div>
+                                    </div>
+                                </li>`;
+                        }
+                    } else {
+                        lessonsHtml += `<li class="list-group-item">${getString("text.noLessonsInUnit")}</li>`;
+                    }
+                    lessonsHtml += '</ul>';
+
+                    unitsHtml += `
+                        <div class="accordion-item">
+                            <div class="accordion-header" id="heading-${programType}-${unit.unit_id.replace(/\s+/g, '')}">
+                                <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapse-${programType}-${unit.unit_id.replace(/\s+/g, '')}" aria-expanded="false">
+                                    <div class="accordion-button-icon">
+                                        <svg  xmlns="http://www.w3.org/2000/svg"  width="24"  height="24"  viewBox="0 0 24 24"  fill="none"  stroke="currentColor"  stroke-width="2"  stroke-linecap="round"  stroke-linejoin="round"  class="icon icon-tabler icons-tabler-outline icon-tabler-book-2"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M19 4v16h-12a2 2 0 0 1 -2 -2v-12a2 2 0 0 1 2 -2h12z" /><path d="M19 16h-12a2 2 0 0 0 -2 2" /><path d="M9 8h6" /></svg>
+                                    </div>
+                                    <h2 class="page-title" style="font-size: 1rem; margin-bottom: 0;">  ${escapeHTML(unit.unit_title_ar)} (${getString("text.unitLabel", {unitNumber: unit.unit_number})}) </h2>
+                                    <div class="accordion-button-toggle">
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-1">
+                                            <path d="M6 9l6 6l6 -6"></path>
+                                        </svg>
+                                    </div>
+                                </button>
+                            </div>
+                            <div id="collapse-${programType}-${unit.unit_id.replace(/\s+/g, '')}" class="accordion-collapse collapse" data-bs-parent="#accordion-${programType.toLowerCase()}">
+                                <div class="accordion-body p-0">
+                                    ${lessonsHtml}
+                                </div>
+                            </div>
+                        </div>`;
+                }
+                unitsHtml += '</div>';
+                container.innerHTML = unitsHtml;
+
+            } catch (error) {
+                console.error(getString("error.couldNotLoadProgramUnits", {programType: programType, errorMessage: error.message}), error);
+                container.innerHTML = `<div class="alert alert-danger">${getString("error.couldNotLoadProgramUnits", {programType: programType, errorMessage: error.message})}</div>`;
+            }
+        }
+
+        async function handleMarkLessonImplemented(event) {
+            event.preventDefault();
+            const lessonId = document.getElementById('modalLessonId').value;
+            const programType = document.getElementById('modalProgramTypeForLesson').value;
+            const implementationDate = document.getElementById('implementationDate').value;
+            const durationMinutes = document.getElementById('implementationDuration').value;
+            const notes = document.getElementById('implementationNotes').value.trim();
+            const completed = document.getElementById('implementationCompleted').checked;
+            if (!implementationDate) {
+                displayMessage(getString("alert.implementationDateRequired"), "error");
+                return;
+            }
+            const implData = {
+                class_id: currentClassId,
+                lesson_id: lessonId,
+                teacher_id: currentTeacher.teacher_id,
+                implementation_date: new Date(implementationDate),
+                notes: notes,
+                duration_minutes: durationMinutes ? parseInt(durationMinutes, 10) : null,
+                completed: completed
+            };
+
+            try {
+               const existingImplementations = await getImplementationsForLessonInClass(currentClassId, lessonId);
+                if (existingImplementations && existingImplementations.length > 0) {
+                    await updateLessonImplementation(existingImplementations[0].implementation_id, implData);
+                    displayMessage(getString("alert.lessonImplementationUpdated"), "success");
+                } else {
+                    await addLessonImplementation(implData);
+                    displayMessage(getString("alert.lessonMarkedImplemented"), "success");
+                }
+
+                var markModalInstance = bootstrap.Modal.getInstance(document.getElementById('markLessonModal'));
+                if(markModalInstance) markModalInstance.hide();
+                await fetchClassLessonImplementations(); // Refresh implementation status
+                // Reload the specific program tab
+                if (programType === "Reading") {
+                    await loadProgramUnitsAndLessons('Reading', 'readingProgramUnits');
+                } else if (programType === "Numeracy") {
+                    await loadProgramUnitsAndLessons('Numeracy', 'numeracyProgramUnits');
+                }
+                await loadClassSummaryData(); // Refresh summary data
+            } catch (error) {
+                console.error(getString("error.savingImplementation", {errorMessage: error.message}), error);
+                displayMessage(getString("error.savingImplementation", {message: error.message}), "error");
+            }
+        }
+
+        async function handleExportStudents() {
+            if (!currentClassId || !currentClassDetails) {
+                displayMessage(getString("alert.export.classDetailsNotLoaded"), "error");
+                return;
+            }
+            try {
+                const students = await getStudentsInClass(currentClassId);
+                if (!students || students.length === 0) {
+                    displayMessage(getString("alert.export.noStudents"), "info");
+                    return;
+                }
+                const headers = [
+                    "Student ID", 
+                    "Full Name", 
+                    "Date of Birth", 
+                    "Gender", 
+                    "Parent Contact", 
+                    "Enrollment Date"
+                ];
+
+                const dataToExport = students.map(student => ({
+                    "Student ID": student.student_id,
+                    "Full Name": student.full_name,
+                    "Date of Birth": student.date_of_birth ? new Date(student.date_of_birth).toLocaleDateString() : '',
+                    "Gender": student.gender || '',
+                    "Parent Contact": student.parent_contact_info || '',
+                    "Enrollment Date": student.enrollment_date ? new Date(student.enrollment_date).toLocaleDateString() : ''
+                }));
+
+                const filename = `students_${currentClassDetails.class_name.replace(/\s+/g, '_')}_${new Date().toISOString().split('T')[0]}.csv`;
+                if (typeof exportToCSV === 'function') {
+                    exportToCSV(dataToExport, filename, headers);
+                    displayMessage(getString("alert.export.success"), "success");
+                } else {
+                    console.error(getString("error.export.functionMissing"));
+                    displayMessage(getString("error.export.functionMissing"), "error");
+                }
+            } catch (error) {
+                console.error(getString("error.export.generic", {errorMessage: error.message}), error);
+                displayMessage(getString("error.export.generic", {message: error.message}), "error");
+            }
+        }
+
+        // --- CLASS SUMMARY TAB LOGIC ---
+        async function loadClassSummaryData() {
+            console.log(getString("text.loadingClassSummary")); // Use getString for console logs too
+            await loadLessonImplementationStatsSummary();
+            await loadRecentActivityPerformanceSummary();
+        }
+
+        async function loadLessonImplementationStatsSummary() {
+            // Reading Program
+            const allReadingLessons = await getProgramUnits("Reading").then(units => 
+                Promise.all(units.map(unit => getLessonsForUnit(unit.unit_id)))
+            ).then(lessonsByUnit => lessonsByUnit.flat());
+            
+            let actualImplementedReadingCount = 0;
+            for (const impl of await getImplementationsForClass(currentClassId)) {
+                const lesson = await getLesson(impl.lesson_id);
+                if (lesson) {
+                    const unit = await getProgramUnit(lesson.unit_id);
+                    if (unit && unit.program_type === "Reading" && impl.completed) {
+                        actualImplementedReadingCount++;
+                    }
+                }
+            }
+
+            document.getElementById('readingTotalLessons').textContent = allReadingLessons.length;
+            document.getElementById('readingImplementedLessons').textContent = actualImplementedReadingCount;
+            const readingPercent = allReadingLessons.length > 0 ? (actualImplementedReadingCount / allReadingLessons.length) * 100 : 0;
+            document.getElementById('readingProgressBar').style.width = `${readingPercent.toFixed(0)}%`;
+            document.getElementById('readingProgressBar').setAttribute('aria-valuenow', readingPercent.toFixed(0));
+            document.getElementById('readingProgressPercent').textContent = `${readingPercent.toFixed(0)}%`;
+
+            // Numeracy Program
+            const allNumeracyLessons = await getProgramUnits("Numeracy").then(units => 
+                Promise.all(units.map(unit => getLessonsForUnit(unit.unit_id)))
+            ).then(lessonsByUnit => lessonsByUnit.flat());
+
+            let actualImplementedNumeracyCount = 0;
+            for (const impl of await getImplementationsForClass(currentClassId)) {
+                const lesson = await getLesson(impl.lesson_id);
+                if (lesson) {
+                    const unit = await getProgramUnit(lesson.unit_id);
+                    if (unit && unit.program_type === "Numeracy" && impl.completed) {
+                        actualImplementedNumeracyCount++;
+                    }
+                }
+            }
+
+            document.getElementById('numeracyTotalLessons').textContent = allNumeracyLessons.length;
+            document.getElementById('numeracyImplementedLessons').textContent = actualImplementedNumeracyCount;
+            const numeracyPercent = allNumeracyLessons.length > 0 ? (actualImplementedNumeracyCount / allNumeracyLessons.length) * 100 : 0;
+            document.getElementById('numeracyProgressBar').style.width = `${numeracyPercent.toFixed(0)}%`;
+            document.getElementById('numeracyProgressBar').setAttribute('aria-valuenow', numeracyPercent.toFixed(0));
+            document.getElementById('numeracyProgressPercent').textContent = `${numeracyPercent.toFixed(0)}%`;
+        }
+
+
+        async function loadRecentActivityPerformanceSummary() {
+            const container = document.getElementById('recentActivityPerformanceContainer');
+            container.innerHTML = `<p class="text-muted">${getString("text.loadingRecentActivity")}</p>`;
+            const filterValue = document.getElementById('recentLessonsFilter').value;
+            try {
+                let implementations = await getImplementationsForClass(currentClassId);
+                implementations = implementations.filter(impl => impl.completed).sort((a, b) => new Date(b.implementation_date) - new Date(a.implementation_date));
+
+                if (filterValue !== "all") {
+                    implementations = implementations.slice(0, parseInt(filterValue));
+                }
+
+               
+                if (implementations.length === 0) {
+                    container.innerHTML = `<p class="text-muted">${getString("summaryTab.recentActivity.noImplementations")}</p>`;
+                    return;
+                }
+
+
+
+                let html = '<div class="list-group">';
+                for (const impl of implementations) {
+                  
+                    const lesson = await getLesson(impl.lesson_id);
+                    if (!lesson) continue;
+
+                    const activities = await getActivitiesForLesson(impl.lesson_id);
+                    if (!activities || activities.length === 0) continue;
+
+
+
+                    html += `<h6 class="mb-1">${escapeHTML(lesson.lesson_title_ar)} 
+                                <small class="text-muted">(${getString("summaryTab.lesson.implementedDate", {date: new Date(impl.implementation_date).toLocaleDateString('en-GB')})})</small>
+                            </h6>`;
+                    // ...
+                    for (const activity of activities) {
+                        const performances = await getActivityPerformanceForImplementation(impl.implementation_id);
+                        const activityPerformances = performances.filter(p => p.activity_id === activity.activity_id);
+                        
+                        let statusCounts = { "Not Started": 0, "In Progress": 0, "Completed": 0, "Needs Support": 0, "Mastered": 0 };
+                        
+                        statusCounts["Not Started"] = studentsInClassForSummary.length; 
+
+                        activityPerformances.forEach(perf => {
+                            if (statusCounts[perf.performance_status] !== undefined) {
+                                statusCounts[perf.performance_status]++;
+                                if (perf.performance_status !== "Not Started") {
+                                     statusCounts["Not Started"]--;
+                                }
+                            }
+                        });
+                        statusCounts["Not Started"] = Math.max(0, statusCounts["Not Started"]);
+
+                        html += `
+                            <div class="ms-3 mt-2">
+                                <strong>${escapeHTML(activity.activity_name_ar)}:</strong>`;
+                        
+                        let summaryItems = [];
+                      // *** MODIFICATION FOR STATUS TRANSLATION IN BADGES ***
+                      if (statusCounts["Completed"] > 0) summaryItems.push(`<span class="badge bg-success-lt me-1">${statusCounts["Completed"]} ${getTranslatedStatus("Completed")}</span>`);
+                        if (statusCounts["Mastered"] > 0) summaryItems.push(`<span class="badge bg-teal-lt me-1">${statusCounts["Mastered"]} ${getTranslatedStatus("Mastered")}</span>`);
+                        if (statusCounts["Needs Support"] > 0) summaryItems.push(`<span class="badge bg-warning-lt me-1">${statusCounts["Needs Support"]} ${getTranslatedStatus("Needs Support")}</span>`);
+                        if (statusCounts["In Progress"] > 0) summaryItems.push(`<span class="badge bg-info-lt me-1">${statusCounts["In Progress"]} ${getTranslatedStatus("In Progress")}</span>`);
+                        if (statusCounts["Not Started"] > 0 && studentsInClassForSummary.length > 0) summaryItems.push(`<span class="badge bg-secondary-lt me-1">${statusCounts["Not Started"]} ${getTranslatedStatus("Not Started")}</span>`);
+
+ 
+
+                        if (summaryItems.length > 0) {
+                           html += ` <span class="ms-2">${summaryItems.join(' ')}</span>`;
+                        } else if (studentsInClassForSummary.length > 0) {
+                             html += ` <span class="ms-2 badge bg-secondary-lt">${studentsInClassForSummary.length} ${getString("summaryTab.recentActivity.noRecords")}</span>`;
+                        } else {
+                            html += ` <span class="ms-2 text-muted">${getString("summaryTab.recentActivity.noStudentsToTrack")}</span>`;
+                        }
+                        html += `</div>`;
+                    }
+                }
+                html += `</div>`; 
+                container.innerHTML = html;
+            } catch (error) {
+                console.error(getString("error.loadingSummaryData", {errorMessage: error.message}), error);
+                container.innerHTML = `<p class="text-danger">${getString("error.loadingSummaryData", {message: error.message})}</p>`;
+            }
+        }
+        
+        function getBootstrapColorForStatus(status) { 
+            switch (status) {
+                case "Completed": return "success";
+                case "Mastered": return "teal";
+                case "In Progress": return "info";
+                case "Needs Support": return "warning";
+                case "Not Started": return "secondary";
+                default: return "light";
+            }
+        }
+        function escapeHTML(str) {
+            if (str === null || str === undefined) return '';
+            return String(str).replace(/[&<>"']/g, function (match) {
+                return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[match];
+            });
+        }
+        function escapeJS(str) { 
+            if (str === null || str === undefined) return '';
+            return String(str)
+                .replace(/\\/g, '\\\\')
+                .replace(/'/g, '\\\'')
+                .replace(/"/g, '\\"')
+                .replace(/\n/g, '\\n')
+                .replace(/\r/g, '\\r')
+                .replace(/\t/g, '\\t');
+        }
+
+    </script>
+</body>
+</html>

@@ -1,0 +1,436 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title data-translate="page.programExplorer.title">Program Explorer - Mialama Platform</title>
+
+    <script src="https://cdn.jsdelivr.net/npm/dexie@3.2.4/dist/dexie.min.js"></script>
+    <script src="js/teachersdataapi.js"></script>
+
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/core@1.1.1/dist/css/tabler.min.css" />
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css">
+    <style>
+        .program-section { margin-bottom: 2rem; }
+        .unit-accordion .accordion-item,
+        .lesson-accordion .accordion-item {
+            margin-bottom: 0.5rem;
+        }
+        .activity-detail-card { margin-top: 0.5rem; }
+        .accordion-body ul { padding-left: 1.2rem; padding-right: 1.2rem; /* Added for RTL */ }
+        .accordion-body pre { white-space: pre-wrap; word-wrap: break-word; }
+
+        .accordion-header {
+            margin: 0;
+            position: relative;
+            display: flex;
+            gap: 1rem;
+            align-items: center;
+            width: 100%;
+            color: var(--tblr-accordion-btn-color);
+            text-align: right; /* Changed to right for RTL */
+            background-color: transparent;
+            border: 0;
+            overflow-anchor: none;
+            transition: transform .3s;
+        }
+
+        .accordion-button {
+            position: relative;
+            display: flex;
+            align-items: center;
+            width: 100%;
+            padding: var(--tblr-accordion-btn-padding-y) var(--tblr-accordion-padding-x);
+            color: inherit;
+            text-align: inherit;
+            background-color: transparent;
+            border: 0;
+            font-size: inherit;
+            font-weight: var(--tblr-accordion-btn-font-weight);
+            gap: .75rem;
+        }
+
+        .accordion-button:not(.collapsed) .accordion-button-toggle {
+            transform: rotate(180deg); /* Adjusted for RTL, Tabler might handle this with dir="rtl" */
+            color: var(--tblr-accordion-active-color);
+        }
+        .accordion-button-toggle {
+             margin-left: auto; /* Push toggle to the end in LTR, Tabler handles RTL */
+        }
+    </style>
+
+    <script src="https://cdn.jsdelivr.net/npm/@tabler/core@1.1.1/dist/js/tabler.min.js"></script>
+</head>
+<body data-bs-theme="light">
+    <div class="page">
+        <!-- Navbar -->
+        <header class="navbar navbar-expand-md navbar-light d-print-none">
+            <div class="container-xl">
+                <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar-menu">
+                    <span class="navbar-toggler-icon"></span>
+                </button>
+                <div class="navbar-brand navbar-brand-autodark d-none-navbar-horizontal pe-0 pe-md-3">
+                    <a href="./index.html">
+                        <img src="./Sources/imgs/logo.png" height="36" alt="Mialama Platform" class="navbar-brand-image" data-translate-alt="alt.logo.mialamaPlatform">
+                    </a>
+                </div>
+                <div class="collapse navbar-collapse" id="navbar-menu">
+                    <div class="d-flex flex-column flex-md-row flex-fill align-items-stretch align-items-md-center">
+                        <ul class="navbar-nav">
+                            <li class="nav-item">
+                                <a class="nav-link" href="./index.html">
+                                    <span class="nav-link-icon d-md-none d-lg-inline-block">
+                                        <i class="ti ti-home"></i>
+                                    </span>
+                                    <span class="nav-link-title" data-translate="nav.dashboard">Dashboard</span>
+                                </a>
+                            </li>
+                            <li class="nav-item active">
+                                <a class="nav-link" href="./program_explorer.html">
+                                     <span class="nav-link-icon d-md-none d-lg-inline-block">
+                                        <i class="ti ti-book"></i>
+                                    </span>
+                                    <span class="nav-link-title" data-translate="nav.programExplorer">Program Explorer</span>
+                                </a>
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+                <div class="navbar-nav flex-row order-md-last">
+                    <div class="nav-item dropdown">
+                        <a href="#" class="nav-link d-flex lh-1 text-reset p-0" data-bs-toggle="dropdown" data-translate-aria-label="aria.openUserMenu" aria-label="Open user menu">
+                            <span class="avatar avatar-sm" id="userAvatar"></span>
+                            <div class="d-none d-xl-block ps-2">
+                                <div id="teacherNameDisplay">Teacher Name</div>
+                                <div class="mt-1 small text-secondary" data-translate="text.teacherRole">Teacher</div>
+                            </div>
+                        </a>
+                        <div class="dropdown-menu dropdown-menu-end dropdown-menu-arrow">
+                            <a href="./profile.html" class="dropdown-item"><i class="ti ti-user-circle icon me-2"></i><span data-translate="dropdown.profile">Profile</span></a>
+                            <a href="./setup.html" class="dropdown-item"><i class="ti ti-settings icon me-2"></i><span data-translate="dropdown.appSetup">Application Setup</span></a>
+                            <a href="#" class="dropdown-item" id="logoutButton"><i class="ti ti-logout icon me-2"></i><span data-translate="dropdown.logout">Logout</span></a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </header>
+
+        <div class="page-wrapper">
+            <!-- Page header -->
+            <div class="page-header d-print-none">
+                <div class="container-xl">
+                    <div class="row g-2 align-items-center">
+                        <div class="col">
+                            <h2 class="page-title" id="pageTitle" data-translate="page.programExplorer.mainTitle">
+                                Program Content Explorer
+                            </h2>
+                            <div class="text-secondary mt-1" data-translate="page.programExplorer.description">Browse units, lessons, and activities for all programs.</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <!-- Page body -->
+            <div class="page-body">
+                <div class="container-xl">
+                    <div id="programExplorerContent">
+                        <!-- Reading Program Section -->
+                        <div class="program-section card">
+                            <div class="card-header">
+                                <h3 class="card-title"><i class="ti ti-book-2 me-2"></i><span data-translate="program.reading.title">Reading Program</span></h3>
+                            </div>
+                            <div class="card-body">
+                                <div id="readingProgramContainer" class="unit-accordion">
+                                    <p class="text-muted" data-translate="program.reading.loading">Loading Reading program units...</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Numeracy Program Section -->
+                        <div class="program-section card">
+                             <div class="card-header">
+                                <h3 class="card-title"><i class="ti ti-calculator me-2"></i><span data-translate="program.numeracy.title">Numeracy Program</span></h3>
+                            </div>
+                            <div class="card-body">
+                                <div id="numeracyProgramContainer" class="unit-accordion">
+                                    <p class="text-muted" data-translate="program.numeracy.loading">Loading Numeracy program units...</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div id="loadingError" class="alert alert-danger" style="display: none;"></div>
+                </div>
+            </div>
+
+            <!-- Footer -->
+            <footer class="footer footer-transparent d-print-none">
+                <div class="container-xl">
+                    <div class="row text-center align-items-center flex-row-reverse">
+                        <div class="col-12 col-lg-auto mt-3 mt-lg-0">
+                            <ul class="list-inline list-inline-dots mb-0">
+                                <li class="list-inline-item" id="footerCopyrightText">
+                                    <!-- Text will be set by JS -->
+                                </li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </footer>
+        </div>
+    </div>
+
+    <!-- IMPORTANT: Include translations.js before your main script block -->
+    <script src="js/translations.js"></script>
+    <script>
+        const CURRENT_TEACHER_ID_KEY = 'currentTeacherId';
+        let currentTeacher = null;
+
+        // Helper function to get translated strings
+        function getString(key, dynamicValues = {}) {
+            if (typeof MIALAMA_TEACHER_TRANSLATIONS_AR !== 'object' || MIALAMA_TEACHER_TRANSLATIONS_AR === null) {
+                console.error("MIALAMA_TEACHER_TRANSLATIONS_AR is not available.");
+                return `Missing translations: ${key}`;
+            }
+            let translation = MIALAMA_TEACHER_TRANSLATIONS_AR[key];
+            if (translation) {
+                return translation.replace(/\{\{(\w+)\}\}/g, (match, placeholderName) => {
+                    return dynamicValues[placeholderName] !== undefined ? dynamicValues[placeholderName] : match;
+                });
+            }
+            console.warn(`Translation key "${key}" not found for language 'ar'. Using key as fallback.`);
+            return key; 
+        }
+
+        document.addEventListener('DOMContentLoaded', async function() {
+            // Set language and direction
+            if (typeof setDocumentLanguageAndDirection === 'function') {
+                setDocumentLanguageAndDirection('ar');
+            } else {
+                console.warn('setDocumentLanguageAndDirection function not found.');
+            }
+            
+            // Apply initial translations to static content
+            if (typeof applyTranslations === 'function') {
+                applyTranslations('ar');
+            } else {
+                console.warn('applyTranslations function not found.');
+            }
+            
+            document.getElementById('footerCopyrightText').innerHTML = getString("footer.copyrightText", { year: new Date().getFullYear() });
+
+
+            try {
+                await initializeDatabase();
+                console.log(getString("console.dbInitProgramExplorer"));
+
+                const teacherId = localStorage.getItem(CURRENT_TEACHER_ID_KEY);
+                if (!teacherId) {
+                    alert(getString("alert.noTeacherInfo")); // Re-use key
+                    window.location.href = 'setup.html';
+                    return;
+                }
+                currentTeacher = await getTeacher(teacherId);
+                if (!currentTeacher) {
+                    alert(getString("alert.teacherProfileNotFound")); // Re-use key
+                    localStorage.removeItem(CURRENT_TEACHER_ID_KEY);
+                    window.location.href = 'setup.html';
+                    return;
+                }
+                updateUserUI(currentTeacher);
+
+                await loadProgramUnitsForType('Reading', 'readingProgramContainer');
+                await loadProgramUnitsForType('Numeracy', 'numeracyProgramContainer');
+                
+                // Re-apply translations if any dynamic data was used in static elements (e.g. teacher name)
+                if (typeof applyTranslations === 'function') {
+                    applyTranslations('ar', { teacherName: currentTeacher.full_name });
+                }
+
+            } catch (error) {
+                console.error(getString("error.loadingProgramContent", {errorMessage: error.message}), error);
+                showError(getString("error.loadingProgramContent", { errorMessage: error.message + (error.stack ? `\n${error.stack}` : '') }));
+            }
+        });
+
+        function updateUserUI(teacher) {
+            document.getElementById('teacherNameDisplay').textContent = teacher.full_name;
+            const initials = teacher.full_name.split(' ').map(n => n[0]).join('').substring(0,2).toUpperCase();
+            document.getElementById('userAvatar').textContent = initials;
+            document.getElementById('logoutButton').addEventListener('click', function(e) {
+                e.preventDefault();
+                if (confirm(getString("confirm.logout"))) { // Re-use key
+                    localStorage.removeItem(CURRENT_TEACHER_ID_KEY);
+                    window.location.href = 'setup.html';
+                }
+            });
+        }
+
+        function showError(message) {
+            const errorDiv = document.getElementById('loadingError');
+            errorDiv.textContent = message; // Message is already translated
+            errorDiv.style.display = 'block';
+            document.getElementById('pageTitle').textContent = getString("page.title.error"); // Translate error page title
+        }
+
+        async function loadProgramUnitsForType(programType, containerId) {
+            const container = document.getElementById(containerId);
+            container.innerHTML = `<div class="text-center p-3"><div class="spinner-border spinner-border-sm" role="status"></div> ${getString("text.loadingUnits")}</div>`;
+
+            try {
+                const units = await getProgramUnits(programType);
+                if (!units || units.length === 0) {
+                    container.innerHTML = `<p class="text-muted">${getString("text.noUnitsFound", {programType: programType})}</p>`;
+                    return;
+                }
+                
+                let unitsHtml = `<div class="accordion" id="accordion-${programType.toLowerCase().replace(/\s+/g, '')}">`;
+                for (const unit of units) {
+                    const unitHtmlId = `unit-${programType}-${unit.unit_id.replace(/[^a-zA-Z0-9]/g, '')}`;
+                    const collapseUnitHtmlId = `collapse-${unitHtmlId}`;
+                    
+                    unitsHtml += `
+                        <div class="accordion-item">
+                            <div class="accordion-header" id="heading-${unitHtmlId}">
+                                <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#${collapseUnitHtmlId}" aria-expanded="false" onclick="loadLessonsForUnit('${unit.unit_id}', '${collapseUnitHtmlId}-body', '${programType}')">
+                                    <div class="accordion-button-icon">
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-tabler icons-tabler-outline icon-tabler-book-2"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M19 4v16h-12a2 2 0 0 1 -2 -2v-12a2 2 0 0 1 2 -2h12z" /><path d="M19 16h-12a2 2 0 0 0 -2 2" /><path d="M9 8h6" /></svg>
+                                    </div>
+                                    <h2 class="page-title">${escapeHTML(unit.unit_title_ar)} (${getString("text.unitLabel", {unitNumber: unit.unit_number})})</h2>
+                                    <div class="accordion-button-toggle">
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-1"><path d="M6 9l6 6l6 -6"></path></svg>
+                                    </div>
+                                </button>
+                            </div>
+                            <div id="${collapseUnitHtmlId}" class="accordion-collapse collapse" data-bs-parent="#accordion-${programType.toLowerCase().replace(/\s+/g, '')}">
+                                <div class="accordion-body" id="${collapseUnitHtmlId}-body">
+                                    <p class="text-muted">${getString("text.clickToLoad.lessons")}</p>
+                                </div>
+                            </div>
+                        </div>`;
+                }
+                unitsHtml += `</div>`;
+                container.innerHTML = unitsHtml;
+
+            } catch (error) {
+                console.error(getString("error.couldNotLoadUnits", {programType: programType, errorMessage: error.message}), error);
+                container.innerHTML = `<div class="alert alert-danger">${getString("error.couldNotLoadUnits", {programType: programType, errorMessage: error.message})}</div>`;
+            }
+        }
+
+        async function loadLessonsForUnit(unitId, lessonsContainerId, programType) {
+            const lessonsContainer = document.getElementById(lessonsContainerId);
+            if (lessonsContainer.children.length > 1 || !lessonsContainer.querySelector('p.text-muted')) {
+                 // return; // Allow re-clicking to reload for now
+            }
+            lessonsContainer.innerHTML = `<div class="text-center p-2"><div class="spinner-border spinner-border-xs" role="status"></div> ${getString("text.loadingLessons")}</div>`;
+
+            try {
+                const lessons = await getLessonsForUnit(unitId);
+                if (!lessons || lessons.length === 0) {
+                    lessonsContainer.innerHTML = `<p class="text-muted">${getString("text.noLessonsFound")}</p>`;
+                    return;
+                }
+
+                let lessonsHtml = `<div class="accordion lesson-accordion" id="accordion-lessons-${unitId.replace(/[^a-zA-Z0-9]/g, '')}">`;
+                for (const lesson of lessons) {
+                    const lessonHtmlId = `lesson-${lesson.lesson_id.replace(/[^a-zA-Z0-9]/g, '')}`;
+                    const collapseLessonHtmlId = `collapse-${lessonHtmlId}`;
+                    lessonsHtml += `
+                        <div class="accordion-item">
+                            <div class="accordion-header" id="heading-${lessonHtmlId}">
+                                <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#${collapseLessonHtmlId}" aria-expanded="false" onclick="loadActivitiesForLesson('${lesson.lesson_id}', '${collapseLessonHtmlId}-body')">
+                                    <div class="accordion-button-icon">
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-tabler icons-tabler-outline icon-tabler-book"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M3 19a9 9 0 0 1 9 0a9 9 0 0 1 9 0" /><path d="M3 6a9 9 0 0 1 9 0a9 9 0 0 1 9 0" /><path d="M3 6l0 13" /><path d="M12 6l0 13" /><path d="M21 6l0 13" /></svg>
+                                    </div>
+                                    <h2 class="page-title">${escapeHTML(lesson.lesson_title_ar)} (${getString("text.sequenceLabel", {sequenceNumber: lesson.lesson_sequence_in_unit})})</h2>
+                                    <div class="accordion-button-toggle">
+                                      <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-1"><path d="M6 9l6 6l6 -6"></path></svg>
+                                    </div>
+                                </button>
+                            </div>
+                            <div id="${collapseLessonHtmlId}" class="accordion-collapse collapse" data-bs-parent="#accordion-lessons-${unitId.replace(/[^a-zA-Z0-9]/g, '')}">
+                                <div class="accordion-body" id="${collapseLessonHtmlId}-body">
+                                    <p class="text-muted">${getString("text.clickToLoad.activities")}</p>
+                                </div>
+                            </div>
+                        </div>`;
+                }
+                lessonsHtml += `</div>`;
+                lessonsContainer.innerHTML = lessonsHtml;
+
+            } catch (error) {
+                console.error(getString("error.couldNotLoadLessons", {errorMessage: error.message}), error);
+                lessonsContainer.innerHTML = `<div class="alert alert-danger">${getString("error.couldNotLoadLessons", {errorMessage: error.message})}</div>`;
+            }
+        }
+        
+        async function loadActivitiesForLesson(lessonId, activitiesContainerId) {
+            const activitiesOuterContainer = document.getElementById(activitiesContainerId);
+            if (activitiesOuterContainer.children.length > 1 || !activitiesOuterContainer.querySelector('p.text-muted')) {
+                // return; // Allow re-clicking to reload
+            }
+            activitiesOuterContainer.innerHTML = `<div class="text-center p-2"><div class="spinner-border spinner-border-xs" role="status"></div> ${getString("text.loadingActivities")}</div>`;
+
+            try {
+                const lesson = await getLesson(lessonId);
+                const activities = await getActivitiesForLesson(lessonId);
+
+                if (!lesson) {
+                     activitiesOuterContainer.innerHTML = `<p class="text-danger">${getString("error.lessonDetailsNotFound")}</p>`;
+                     return;
+                }
+                
+                let lessonDetailsHtml = `
+                    <div class="card mb-2">
+                        <div class="card-body">
+                            <h5 class="card-title">${getString("lesson.overviewTitlePrefix")} ${escapeHTML(lesson.lesson_title_ar)}</h5>
+                            <p><strong>${getString("lesson.objectivesLabel")}</strong></p>
+                            <ul>${(Array.isArray(lesson.lesson_objectives_ar) ? lesson.lesson_objectives_ar.map(o => `<li>${escapeHTML(o)}</li>`).join('') : `<li>${getString("text.notApplicable")}</li>`)}</ul>
+                            <p><strong>${getString("lesson.materialsLabel")}</strong></p>
+                            <ul>${(Array.isArray(lesson.materials_needed_ar) ? lesson.materials_needed_ar.map(m => `<li>${escapeHTML(m)}</li>`).join('') : `<li>${getString("text.notApplicable")}</li>`)}</ul>
+                            <p><strong>${getString("lesson.teachingFocusLabel")}</strong> ${escapeHTML(lesson.teaching_focus_ar) || getString("text.notApplicable")}</p>
+                            <p><strong>${getString("lesson.estTimeLabel")}</strong> ${lesson.estimated_total_lesson_time_minutes || getString("text.notApplicable")} ${lesson.estimated_total_lesson_time_minutes ? getString("lesson.minutesSuffix") : ''}</p>
+                        </div>
+                    </div>
+                    <h3>${getString("activities.title")}</h3>`;
+
+
+                if (!activities || activities.length === 0) {
+                    activitiesOuterContainer.innerHTML = lessonDetailsHtml + `<p class="text-muted">${getString("text.noActivitiesFound")}</p>`;
+                    return;
+                }
+
+                let activitiesHtml = lessonDetailsHtml + '<div class="list-group">';
+                for (const activity of activities) {
+                    activitiesHtml += `
+                        <div class="list-group-item activity-detail-card">
+                            <h6 class="mb-1">${escapeHTML(activity.activity_name_ar)} (${getString("text.sequenceLabel", {sequenceNumber: activity.activity_sequential_id})})</h6>
+                            <small class="text-muted">${getString("activity.typeLabel")} ${escapeHTML(activity.activity_type) || getString("text.notApplicable")} | ${getString("lesson.estTimeLabel")} ${activity.estimated_time_activity_minutes || getString("text.notApplicable")} ${activity.estimated_time_activity_minutes ? getString("lesson.minutesSuffix") : ''}</small>
+                            <p class="mt-2 mb-1"><strong>${getString("activity.teacherInstructionsLabel")}</strong></p>
+                            <ul>${(Array.isArray(activity.teacher_instructions_ar) ? activity.teacher_instructions_ar.map(i => `<li>${escapeHTML(i)}</li>`).join('') : `<li>${getString("text.notApplicable")}</li>`)}</ul>
+                            ${activity.expected_student_interaction_ar ? `<p class="mb-1"><strong>${getString("activity.expectedInteractionLabel")}</strong> ${escapeHTML(activity.expected_student_interaction_ar)}</p>` : ''}
+                            ${(Array.isArray(activity.assessment_notes_ar) && activity.assessment_notes_ar.length > 0) ? `<p class="mb-1"><strong>${getString("activity.assessmentNotesLabel")}</strong></p><ul>${activity.assessment_notes_ar.map(a => `<li>${escapeHTML(a)}</li>`).join('')}</ul>` : ''}
+                            ${activity.pedagogical_notes_ar ? `<p class="mb-1"><strong>${getString("activity.pedagogicalNotesLabel")}</strong> ${escapeHTML(activity.pedagogical_notes_ar)}</p>` : ''}
+                            ${(Array.isArray(activity.classroom_management_tips_ar) && activity.classroom_management_tips_ar.length > 0) ? `<p class="mb-1"><strong>${getString("activity.classroomManagementLabel")}</strong></p><ul>${activity.classroom_management_tips_ar.map(c => `<li>${escapeHTML(c)}</li>`).join('')}</ul>` : ''}
+                            ${activity.content_to_deliver_ar && activity.content_to_deliver_ar.nashid_title ? 
+                                `<div><strong>${getString("activity.contentNashidLabel", {nashidTitle: escapeHTML(activity.content_to_deliver_ar.nashid_title)})}</strong><pre>${escapeHTML(activity.content_to_deliver_ar.nashid_lyrics || '')}</pre></div>` : ''
+                            }
+                        </div>`;
+                }
+                activitiesHtml += `</div>`;
+                activitiesOuterContainer.innerHTML = activitiesHtml;
+
+            } catch (error) {
+                console.error(getString("error.couldNotLoadActivities", {errorMessage: error.message}), error);
+                activitiesOuterContainer.innerHTML = `<div class="alert alert-danger">${getString("error.couldNotLoadActivities", {errorMessage: error.message})}</div>`;
+            }
+        }
+
+        function escapeHTML(str) {
+            if (str === null || str === undefined) return '';
+            return String(str).replace(/[&<>"']/g, function (match) {
+                return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[match];
+            });
+        }
+    </script>
+</body>
+</html>

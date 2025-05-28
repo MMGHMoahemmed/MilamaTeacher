@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl"> <!-- Default to Arabic, JS will also set this -->
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title data-translate="page.setup.title">Application Setup - Mialama Platform</title>
+
+    <script src="https://cdn.jsdelivr.net/npm/dexie@3.2.4/dist/dexie.min.js"></script>
+    <script src="js/teachersdataapi.js"></script>
+
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/core@1.1.1/dist/css/tabler.min.css" />
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css">
+    <style>
+        body { display: flex; align-items: center; justify-content: center; min-height: 100vh; }
+        .card { min-width: 500px; }
+    </style>
+</head>
+<body data-bs-theme="light">
+    <div class="page page-center">
+        <div class="container container-tight py-4">
+            <div class="text-center mb-4">
+                <a href="." class="navbar-brand navbar-brand-autodark">
+                    <img src="./Sources/imgs/logo.png" height="10px" alt="Mialama Platform" data-translate-alt="alt.logo.mialamaPlatform">
+                </a>
+            </div>
+            <div class="card card-md">
+                <div class="card-body">
+                    <h2 class="h2 text-center mb-4" id="setupPageTitle" data-translate="setup.pageTitle.main">Application Setup</h2>
+
+                    <!-- Step 1: Teacher Setup -->
+                    <div id="teacherSetupSection">
+                        <h3 class="card-title" data-translate="setup.teacherInfo.title">Teacher Information</h3>
+                        <p class="text-muted" id="teacherStatusMessage" data-translate="setup.teacherInfo.status.default">Please enter your details to get started.</p>
+                        <form id="teacherSetupForm">
+                            <div class="mb-3">
+                                <label class="form-label required" data-translate="form.label.fullName">Full Name</label>
+                                <input type="text" class="form-control" id="teacherFullName" data-translate-placeholder="form.placeholder.fullName" placeholder="Enter your full name" required>
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label required" data-translate="form.label.emailAddress">Email Address</label>
+                                <input type="email" class="form-control" id="teacherEmail" data-translate-placeholder="form.placeholder.email" placeholder="Enter your email" required>
+                            </div>
+                            <div class="form-footer">
+                                <button type="submit" class="btn btn-primary w-100" data-translate="button.saveTeacherInfo">Save Teacher Information</button>
+                            </div>
+                        </form>
+                    </div>
+
+                    <!-- Step 2: Proceed to Application -->
+                    <div id="proceedSection" class="mt-4" style="display: none;">
+                        <h3 class="card-title" id="proceedTitle" data-translate="setup.proceed.title.complete">Setup Complete!</h3>
+                        <p id="proceedMessage" data-translate="setup.proceed.message.profileSavedFirstTime">Your profile is saved. Initial program content is being loaded if this is your first time. You can now proceed to the main application.</p>
+                        <a href="index.html" class="btn btn-success w-100" data-translate="button.goToDashboard">Go to Dashboard</a>
+                    </div>
+                </div>
+            </div>
+
+            <div hidden="hidden" class="text-center text-muted mt-3" id="setupFooterMessageContainer">
+                <span data-translate="setup.footer.textBeforeLink">If you've already set up your profile, you can </span>
+                <a href="index.html" data-translate="text.goToDashboardLink">go to the dashboard</a>.
+            </div>
+        </div>
+    </div>
+
+    <!-- IMPORTANT: Include translations.js before your main script block -->
+    <script src="js/translations.js"></script>
+    <script>
+        const CURRENT_TEACHER_ID_KEY = 'currentTeacherId';
+
+        // Helper function to get translated strings
+        function getString(key, dynamicValues = {}) {
+            if (typeof MIALAMA_TEACHER_TRANSLATIONS_AR !== 'object' || MIALAMA_TEACHER_TRANSLATIONS_AR === null) {
+                console.error("MIALAMA_TEACHER_TRANSLATIONS_AR is not available.");
+                return `Missing translations: ${key}`; // Fallback for critical error
+            }
+            let translation = MIALAMA_TEACHER_TRANSLATIONS_AR[key];
+            if (translation) {
+                return translation.replace(/\{\{(\w+)\}\}/g, (match, placeholderName) => {
+                    return dynamicValues[placeholderName] !== undefined ? dynamicValues[placeholderName] : match;
+                });
+            }
+            console.warn(`Translation key "${key}" not found.`);
+            return key; // Fallback to key name
+        }
+
+        document.addEventListener('DOMContentLoaded', async function() {
+            // Set language and direction
+            if (typeof setDocumentLanguageAndDirection === 'function') {
+                setDocumentLanguageAndDirection('ar');
+            } else {
+                console.warn('setDocumentLanguageAndDirection function not found. Ensure translations.js is loaded and correctly defined.');
+            }
+            
+            // Apply initial translations to static content
+            if (typeof applyTranslations === 'function') {
+                applyTranslations('ar');
+            } else {
+                console.warn('applyTranslations function not found. Ensure translations.js is loaded and correctly defined.');
+            }
+
+            const teacherSetupForm = document.getElementById('teacherSetupForm');
+            const teacherFullNameInput = document.getElementById('teacherFullName');
+            const teacherEmailInput = document.getElementById('teacherEmail');
+            const teacherSetupSection = document.getElementById('teacherSetupSection');
+            const proceedSection = document.getElementById('proceedSection');
+            const teacherStatusMessage = document.getElementById('teacherStatusMessage');
+            const setupPageTitle = document.getElementById('setupPageTitle');
+            const proceedTitle = document.getElementById('proceedTitle');
+            const proceedMessage = document.getElementById('proceedMessage');
+            const setupFooterMessageContainer = document.getElementById('setupFooterMessageContainer');
+            const submitButton = teacherSetupForm.querySelector('button[type="submit"]');
+
+
+            try {
+                await initializeDatabase(); // This will also attempt to seed data
+                console.log(getString("console.dbInitSetupPage"));
+                await checkTeacherSetup(); // checkTeacherSetup will also call applyTranslations with dynamic data
+            } catch (error) {
+                console.error(getString("console.errorInitDbSetupPage", {errorMessage: error.message}), error);
+                setupPageTitle.textContent = getString("setup.pageTitle.initError");
+                teacherStatusMessage.innerHTML = `<div class="alert alert-danger">${getString("setup.teacherInfo.status.initError", {errorMessage: error.message})}</div>`;
+                teacherSetupForm.style.display = 'none';
+                proceedSection.style.display = 'none';
+                setupFooterMessageContainer.style.display = 'none';
+                // No need to call applyTranslations here as we're setting textContent directly with getString
+            }
+
+
+            async function checkTeacherSetup() {
+                const teachers = await getAllTeachers();
+                const currentTeacherId = localStorage.getItem(CURRENT_TEACHER_ID_KEY);
+                let currentTeacher = null;
+                let dynamicTranslations = {};
+
+                if (currentTeacherId) {
+                    currentTeacher = await getTeacher(currentTeacherId);
+                } else if (teachers.length > 0) {
+                    currentTeacher = teachers[0];
+                    localStorage.setItem(CURRENT_TEACHER_ID_KEY, currentTeacher.teacher_id);
+                }
+
+                if (currentTeacher) {
+                    dynamicTranslations.teacherName = currentTeacher.full_name;
+                    teacherStatusMessage.innerHTML = getString("setup.teacherInfo.status.welcomeBack", { teacherName: currentTeacher.full_name });
+                    teacherFullNameInput.value = currentTeacher.full_name;
+                    teacherEmailInput.value = currentTeacher.email;
+                    submitButton.textContent = getString("button.updateTeacherInfo");
+                    
+                    proceedTitle.textContent = getString("setup.proceed.title.profileActive");
+                    proceedMessage.textContent = getString("setup.proceed.message.profileActive");
+                    proceedSection.style.display = 'block';
+                } else {
+                    teacherStatusMessage.textContent = getString("setup.teacherInfo.status.enterDetailsLoadProgram");
+                    submitButton.textContent = getString("button.saveTeacherInfo"); // Ensure default text
+                    proceedSection.style.display = 'none';
+                }
+                // Apply translations, including any dynamic values
+                if (typeof applyTranslations === 'function') {
+                    applyTranslations('ar', dynamicTranslations);
+                }
+            }
+
+            teacherSetupForm.addEventListener('submit', async function(event) {
+                event.preventDefault();
+                const fullName = teacherFullNameInput.value.trim();
+                const email = teacherEmailInput.value.trim();
+
+                if (!fullName || !email) {
+                    alert(getString("alert.fullNameAndEmailRequired"));
+                    return;
+                }
+
+                try {
+                    let teacherId = localStorage.getItem(CURRENT_TEACHER_ID_KEY);
+                    let existingTeacherByEmail = await db.teachers.where('email').equals(email).first();
+                    let teacherToSave = {
+                        full_name: fullName,
+                        email: email
+                    };
+
+                    if (teacherId) {
+                        const currentTeacher = await getTeacher(teacherId);
+                        if (currentTeacher && currentTeacher.email !== email && existingTeacherByEmail) {
+                             alert(getString("alert.emailInUseAnotherProfile"));
+                             return;
+                        }
+                        teacherToSave.teacher_id = teacherId;
+                    } else if (existingTeacherByEmail) {
+                        alert(getString("alert.emailInUseCheckLogin"));
+                        return;
+                    }
+
+                    const savedTeacher = await addTeacher(teacherToSave);
+
+                    if (savedTeacher && savedTeacher.teacher_id) {
+                        localStorage.setItem(CURRENT_TEACHER_ID_KEY, savedTeacher.teacher_id);
+                        alert(getString("alert.teacherInfoSavedSuccess"));
+                        
+                        proceedTitle.textContent = getString("setup.proceed.title.profileSaved");
+                        proceedMessage.textContent = getString("setup.proceed.message.profileSavedSuccessfully");
+                        proceedSection.style.display = 'block';
+                        submitButton.textContent = getString("button.updateTeacherInfo");
+                        teacherFullNameInput.value = savedTeacher.full_name;
+                        teacherEmailInput.value = savedTeacher.email;
+                        
+                        // Re-apply translations if needed, especially if new dynamic data was introduced
+                        if (typeof applyTranslations === 'function') {
+                            applyTranslations('ar', { teacherName: savedTeacher.full_name });
+                        }
+                    } else {
+                        alert(getString("alert.couldNotSaveTeacherInfo"));
+                    }
+                } catch (error) {
+                    console.error(getString("console.errorSavingTeacherInfo", {errorMessage: error.message}), error);
+                    alert(getString("alert.errorSavingTeacher", {errorMessage: error.message}));
+                }
+            });
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,233 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title data-translate="page.classSummary.title">Class Summary - Mialama Platform</title>
+
+    <script src="https://cdn.jsdelivr.net/npm/dexie@3.2.4/dist/dexie.min.js"></script>
+    <script src="js/teachersdataapi.js"></script>
+    <!-- We will create this new JS file -->
+    <script src="js/class_summary_logic.js"></script>
+
+    <script src="https://cdn.jsdelivr.net/npm/@tabler/core@1.1.1/dist/js/tabler.min.js"></script>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/core@1.1.1/dist/css/tabler.min.css" />
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css">
+    <style>
+        .summary-section { margin-bottom: 2rem; }
+        .progress-sm { height: 0.5rem; } /* Smaller progress bar */
+    </style>
+</head>
+<body data-bs-theme="light">
+    <div class="page">
+        <!-- Navbar -->
+        <header class="navbar navbar-expand-md navbar-light d-print-none">
+            <div class="container-xl">
+                <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar-menu">
+                    <span class="navbar-toggler-icon"></span>
+                </button>
+                <div class="navbar-brand navbar-brand-autodark d-none-navbar-horizontal pe-0 pe-md-3">
+                    <a href="./index.html">
+                        <img src="./Sources/imgs/logo.png" height="36" alt="Mialama Platform" class="navbar-brand-image" data-translate-alt="alt.logo.mialamaPlatform">
+                    </a>
+                </div>
+                <div class="collapse navbar-collapse" id="navbar-menu">
+                    <div class="d-flex flex-column flex-md-row flex-fill align-items-stretch align-items-md-center">
+                        <ul class="navbar-nav">
+                            <li class="nav-item"> <!-- Removed 'active' based on other pages, adjust if needed -->
+                                <a class="nav-link" href="./index.html">
+                                    <span class="nav-link-icon d-md-none d-lg-inline-block">
+                                        <i class="ti ti-home"></i>
+                                    </span>
+                                    <span class="nav-link-title" data-translate="nav.dashboard">Dashboard</span>
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link" href="./program_explorer.html">
+                                     <span class="nav-link-icon d-md-none d-lg-inline-block">
+                                        <i class="ti ti-book"></i>
+                                    </span>
+                                    <span class="nav-link-title" data-translate="nav.programExplorer">Program Explorer</span>
+                                </a>
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+                <div class="navbar-nav flex-row order-md-last">
+                    <div class="nav-item dropdown">
+                        <a href="#" class="nav-link d-flex lh-1 text-reset p-0" data-bs-toggle="dropdown" data-translate-aria-label="aria.openUserMenu" aria-label="Open user menu">
+                            <span class="avatar avatar-sm" id="userAvatar"></span>
+                            <div class="d-none d-xl-block ps-2">
+                                <div id="teacherNameDisplay">Teacher Name</div>
+                                <div class="mt-1 small text-secondary" data-translate="text.teacherRole">Teacher</div>
+                            </div>
+                        </a>
+                        <div class="dropdown-menu dropdown-menu-end dropdown-menu-arrow">
+                            <a href="./profile.html" class="dropdown-item"><i class="ti ti-user-circle icon me-2"></i><span data-translate="dropdown.profile">Profile</span></a>
+                            <a href="./setup.html" class="dropdown-item"><i class="ti ti-settings icon me-2"></i><span data-translate="dropdown.appSetup">Application Setup</span></a>
+                            <a href="#" class="dropdown-item" id="logoutButton"><i class="ti ti-logout icon me-2"></i><span data-translate="dropdown.logout">Logout</span></a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </header>
+
+        <div class="page-wrapper">
+            <!-- Page header -->
+            <div class="page-header d-print-none">
+                <div class="container-xl">
+                    <div class="row g-2 align-items-center">
+                        <div class="col">
+                             <nav aria-label="breadcrumb">
+                                <ol class="breadcrumb">
+                                    <li class="breadcrumb-item"><a href="index.html" data-translate="breadcrumb.dashboard">Dashboard</a></li>
+                                    <li class="breadcrumb-item"><a id="classLinkBreadcrumb" href="#" data-translate="breadcrumb.classDetails">Class Details</a></li>
+                                    <li class="breadcrumb-item active" aria-current="page" data-translate="breadcrumb.classSummary">Class Summary</li>
+                                </ol>
+                            </nav>
+                            <h2 class="page-title" id="pageTitle" data-translate="page.classSummary.mainTitle">
+                                Class Progress Summary
+                            </h2>
+                            <div class="text-secondary mt-1"><span data-translate="page.classSummary.forClassLabel">For Class:</span> <span id="classNameHeader" data-translate="text.loading">Loading...</span></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <!-- Page body -->
+            <div class="page-body">
+                <div class="container-xl">
+                    <div id="summaryContent" style="display: none;">
+                        <!-- Lesson Implementation Summary -->
+                        <div class="card summary-section">
+                            <div class="card-header">
+                                <h3 class="card-title" data-translate="card.lessonImplementation.title">Lesson Implementation Progress</h3>
+                            </div>
+                            <div class="card-body">
+                                <div class="row">
+                                    <div class="col-md-6 mb-3">
+                                        <h5><i class="ti ti-book-2 me-1"></i><span data-translate="program.reading.title">Reading Program</span></h5>
+                                        <div id="readingProgressStats">
+                                            <p><span data-translate="text.totalLessons">Total Lessons:</span> <span id="readingTotalLessons">0</span></p>
+                                            <p><span data-translate="text.implementedLessons">Implemented Lessons:</span> <span id="readingImplementedLessons">0</span></p>
+                                            <div class="progress progress-sm">
+                                                <div id="readingProgressBar" class="progress-bar" role="progressbar" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100" style="width: 0%;"></div>
+                                            </div>
+                                            <p class="mt-1"><strong id="readingProgressPercent">0%</strong> <span data-translate="text.implementedPercentSuffix">Implemented</span></p>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6 mb-3">
+                                        <h5><i class="ti ti-calculator me-1"></i><span data-translate="program.numeracy.title">Numeracy Program</span></h5>
+                                        <div id="numeracyProgressStats">
+                                            <p><span data-translate="text.totalLessons">Total Lessons:</span> <span id="numeracyTotalLessons">0</span></p>
+                                            <p><span data-translate="text.implementedLessons">Implemented Lessons:</span> <span id="numeracyImplementedLessons">0</span></p>
+                                            <div class="progress progress-sm">
+                                                <div id="numeracyProgressBar" class="progress-bar" role="progressbar" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100" style="width: 0%;"></div>
+                                            </div>
+                                            <p class="mt-1"><strong id="numeracyProgressPercent">0%</strong> <span data-translate="text.implementedPercentSuffix">Implemented</span></p>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Recent Activity Performance Summary -->
+                        <div class="card summary-section">
+                            <div class="card-header">
+                                <h3 class="card-title" data-translate="card.recentActivity.title">Recent Activity Performance</h3>
+                                <div class="card-actions">
+                                    <select id="recentLessonsFilter" class="form-select form-select-sm">
+                                        <option value="5" data-translate="filter.last5Implemented">Last 5 Implemented Lessons</option>
+                                        <option value="10" data-translate="filter.last10Implemented">Last 10 Implemented Lessons</option>
+                                        <option value="all" data-translate="filter.allImplemented">All Implemented Lessons</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="card-body">
+                                <div id="recentActivityPerformanceContainer">
+                                    <p class="text-muted" data-translate="text.loadingRecentActivity">Loading recent activity performance...</p>
+                                </div>
+                            </div>
+                        </div>
+
+                    </div>
+                    <div id="loadingError" class="alert alert-danger" style="display: none;"></div>
+                    <div id="loadingSpinner" class="text-center p-5">
+                        <div class="spinner-border" role="status"></div>
+                        <p class="mt-2" data-translate="text.loadingClassSummary">Loading class summary...</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Footer -->
+            <footer class="footer footer-transparent d-print-none">
+                <div class="container-xl">
+                    <div class="row text-center align-items-center flex-row-reverse">
+                        <div class="col-12 col-lg-auto mt-3 mt-lg-0">
+                            <ul class="list-inline list-inline-dots mb-0">
+                                <li class="list-inline-item" id="footerCopyrightText">
+                                    <!-- Text will be set by JS using getString("footer.copyrightText", { year: ... }) -->
+                                </li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </footer>
+        </div>
+    </div>
+
+    <!-- IMPORTANT: Include translations.js before your main script block -->
+    <script src="js/translations.js"></script>
+    <script>
+        // Helper function to get translated strings (can be moved to a global scope or translations.js if not already there)
+        // Ensure this is available before class_summary_logic.js tries to use it.
+        function getString(key, dynamicValues = {}) {
+            if (typeof MIALAMA_TEACHER_TRANSLATIONS_AR !== 'object' || MIALAMA_TEACHER_TRANSLATIONS_AR === null) {
+                console.error("MIALAMA_TEACHER_TRANSLATIONS_AR is not available.");
+                return `Missing translations: ${key}`;
+            }
+            let translation = MIALAMA_TEACHER_TRANSLATIONS_AR[key];
+            if (translation) {
+                return translation.replace(/\{\{(\w+)\}\}/g, (match, placeholderName) => {
+                    return dynamicValues[placeholderName] !== undefined ? dynamicValues[placeholderName] : match;
+                });
+            }
+            console.warn(`Translation key "${key}" not found for language 'ar'. Using key as fallback.`);
+            return key; 
+        }
+
+        document.addEventListener('DOMContentLoaded', function() {
+            // Set language and direction as early as possible
+            if (typeof setDocumentLanguageAndDirection === 'function') {
+                setDocumentLanguageAndDirection('ar');
+            } else {
+                console.warn('setDocumentLanguageAndDirection function not found. Ensure translations.js is loaded.');
+            }
+
+            // Apply translations to static elements on this page
+            if (typeof applyTranslations === 'function') {
+                applyTranslations('ar'); // Apply static translations
+            } else {
+                console.warn('applyTranslations function not found. Ensure translations.js is loaded.');
+            }
+            
+            // Set dynamic footer text
+            document.getElementById('footerCopyrightText').innerHTML = getString("footer.copyrightText", { year: new Date().getFullYear() });
+
+
+            // JavaScript for this page will be in js/class_summary_logic.js
+            // We'll call an initialization function from there.
+            if (typeof initializeClassSummaryPage === 'function') {
+                // Pass getString to the initialization function so it can be used within class_summary_logic.js
+                initializeClassSummaryPage(getString); 
+            } else {
+                console.error("Error: initializeClassSummaryPage function not found. Make sure js/class_summary_logic.js is loaded correctly.");
+                document.getElementById('loadingSpinner').style.display = 'none';
+                const errorDiv = document.getElementById('loadingError');
+                // Use getString for this error message as well
+                errorDiv.textContent = getString("error.classSummary.criticalLoad"); 
+                errorDiv.style.display = 'block';
+            }
+        });
+    </script>
+</body>
+</html>

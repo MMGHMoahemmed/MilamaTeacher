@@ -1,0 +1,655 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title data-translate="page.lessonView.title">Lesson View - Mialama Platform</title>
+
+    <script src="https://cdn.jsdelivr.net/npm/dexie@3.2.4/dist/dexie.min.js"></script>
+    <script src="js/teachersdataapi.js"></script>
+
+    <script src="https://cdn.jsdelivr.net/npm/@tabler/core@1.1.1/dist/js/tabler.min.js"></script>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/core@1.1.1/dist/css/tabler.min.css" />
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css">
+    <style>
+        .activity-card { margin-bottom: 1.5rem; }
+        .student-activity-status select { min-width: 150px; }
+        .notes-input { width: 100%; margin-top: 5px; }
+        .bulk-update-controls {
+            padding: 0.75rem;
+            background-color: #f8f9fa;
+            border-bottom: 1px solid #dee2e6;
+            border-top-left-radius: var(--tblr-card-border-radius);
+            border-top-right-radius: var(--tblr-card-border-radius);
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+        .student-progress-table th:first-child,
+        .student-progress-table td:first-child {
+            width: 3rem;
+            text-align: center;
+        }
+        .bulk-update-controls .form-check {
+            margin-bottom: 0;
+        }
+        .accordion-body pre { white-space: pre-wrap; word-wrap: break-word; }
+    </style>
+</head>
+<body data-bs-theme="light">
+    <div class="page">
+        <!-- Navbar -->
+        <header class="navbar navbar-expand-md navbar-light d-print-none">
+            <div class="container-xl">
+                <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar-menu">
+                    <span class="navbar-toggler-icon"></span>
+                </button>
+                <div class="navbar-brand navbar-brand-autodark d-none-navbar-horizontal pe-0 pe-md-3">
+                    <a href="./index.html">
+                        <img src="./Sources/imgs/logo.png" height="36" alt="Mialama Platform" class="navbar-brand-image" data-translate-alt="alt.logo.mialamaPlatform">
+                    </a>
+                </div>
+                <div class="collapse navbar-collapse" id="navbar-menu">
+                    <div class="d-flex flex-column flex-md-row flex-fill align-items-stretch align-items-md-center">
+                        <ul class="navbar-nav">
+                            <li class="nav-item active"> <!-- Removed 'active' class -->
+                                <a class="nav-link" href="./index.html">
+                                    <span class="nav-link-icon d-md-none d-lg-inline-block">
+                                        <i class="ti ti-home"></i>
+                                    </span>
+                                    <span class="nav-link-title" data-translate="nav.dashboard">Dashboard</span>
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link" href="./program_explorer.html">
+                                     <span class="nav-link-icon d-md-none d-lg-inline-block">
+                                        <i class="ti ti-book"></i>
+                                    </span>
+                                    <span class="nav-link-title" data-translate="nav.programExplorer">Program Explorer</span>
+                                </a>
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+                <div class="navbar-nav flex-row order-md-last">
+                    <div class="nav-item dropdown">
+                        <a href="#" class="nav-link d-flex lh-1 text-reset p-0" data-bs-toggle="dropdown" data-translate-aria-label="aria.openUserMenu" aria-label="Open user menu">
+                            <span class="avatar avatar-sm" id="userAvatar"></span>
+                            <div class="d-none d-xl-block ps-2">
+                                <div id="teacherNameDisplay">Teacher Name</div>
+                                <div class="mt-1 small text-secondary" data-translate="text.teacherRole">Teacher</div>
+                            </div>
+                        </a>
+                        <div class="dropdown-menu dropdown-menu-end dropdown-menu-arrow">
+                            <a href="./profile.html" class="dropdown-item"><i class="ti ti-user-circle icon me-2"></i><span data-translate="dropdown.profile">Profile</span></a>
+                            <a href="./setup.html" class="dropdown-item"><i class="ti ti-settings icon me-2"></i><span data-translate="dropdown.appSetup">Application Setup</span></a>
+                            <a href="#" class="dropdown-item" id="logoutButton"><i class="ti ti-logout icon me-2"></i><span data-translate="dropdown.logout">Logout</span></a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </header>
+
+        <div class="page-wrapper">
+            <!-- Page header -->
+            <div class="page-header d-print-none">
+                <div class="container-xl">
+                    <div class="row g-2 align-items-center">
+                        <div class="col">
+                            <nav aria-label="breadcrumb">
+                                <ol class="breadcrumb">
+                                    <li class="breadcrumb-item"><a href="index.html" data-translate="breadcrumb.dashboard">Dashboard</a></li>
+                                    <li class="breadcrumb-item"><a id="classLinkBreadcrumb" href="#" data-translate="breadcrumb.classDetails">Class Details</a></li>
+                                    <li class="breadcrumb-item active" aria-current="page" id="lessonNameBreadcrumb" data-translate="breadcrumb.lessonView.active">Lesson View</li>
+                                </ol>
+                            </nav>
+                            <h2 class="page-title" id="pageTitle" >
+                                Loading Lesson Details...
+                            </h2>
+                            <div class="text-secondary mt-1" id="lessonSubHeader"><span data-translate="page.lessonView.subHeader" class="dynamic-class-name-placeholder">For Class: {{className}}</span></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <!-- Page body -->
+            <div class="page-body">
+                <div class="container-xl">
+                    <div id="successMessageGlobal" class="alert alert-success" style="display: none;"></div>
+                    <div id="errorMessageGlobal" class="alert alert-danger" style="display: none;"></div>
+
+                    <div id="lessonDetailsContent" style="display: none;">
+                        <!-- Lesson Info Card -->
+                        <div class="card mb-3">
+                            <div class="card-header">
+                                <h3 class="card-title" id="lessonTitleCard" >Lesson Title</h3>
+                            </div>
+                            <div class="card-body">
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <strong data-translate="lesson.objectivesLabel">Objectives:</strong>
+                                        <ul id="lessonObjectivesList"><li data-translate="lesson.noObjectivesListed">N/A</li></ul>
+                                        <strong data-translate="lesson.teachingFocusLabel">Teaching Focus:</strong>
+                                        <p id="lessonTeachingFocus" data-translate="text.notApplicable">N/A</p>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <strong data-translate="lesson.materialsLabel">Materials Needed:</strong>
+                                        <ul id="lessonMaterialsList"><li data-translate="lesson.noMaterialsListed">N/A</li></ul>
+                                        <p><strong data-translate="lesson.estTimeLabel">Estimated Time:</strong>
+                                        <span id="lessonEstimatedTime" data-translate="text.notApplicable">N/A</span> <span data-translate="lesson.minutesSuffix">minutes</span></p>
+                                        <p><strong data-translate="lesson.teacherGuidePagesLabel">Teacher Guide Pages:</strong>
+                                        <span id="lessonTeacherGuidePages" data-translate="text.notApplicable">N/A</span></p>
+                                        <p><strong data-translate="lesson.studentBookPagesLabel">Student Book Pages:</strong>
+                                        <span id="lessonStudentBookPages" data-translate="text.notApplicable">N/A</span></p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Activities Section -->
+                        <h3 class="mt-4 mb-3" data-translate="heading.activitiesAndProgress">Activities & Student Progress</h3>
+                        <div id="activitiesContainer">
+                            <p class="text-muted" data-translate="text.loadingActivities">Loading activities...</p>
+                        </div>
+                    </div>
+                    <div id="loadingError" class="alert alert-danger" style="display: none;"></div>
+                </div>
+            </div>
+
+            <!-- Footer -->
+            <footer class="footer footer-transparent d-print-none">
+                <div class="container-xl">
+                    <div class="row text-center align-items-center flex-row-reverse">
+                        <div class="col-12 col-lg-auto mt-3 mt-lg-0">
+                            <ul class="list-inline list-inline-dots mb-0">
+                                <li class="list-inline-item" id="footerCopyrightText">
+                                    <!-- Text will be set by JS -->
+                                </li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </footer>
+        </div>
+    </div>
+
+    <!-- IMPORTANT: Include translations.js before your main script block -->
+    <script src="js/translations.js"></script>
+    <script>
+        const CURRENT_TEACHER_ID_KEY = 'currentTeacherId';
+        let currentTeacher = null;
+        let currentClassId = null;
+        let currentLessonId = null;
+        let currentClassDetails = null;
+        let currentLessonDetails = null;
+        let studentsInClass = [];
+        let lessonImplementation = null;
+
+        // Keys for performance statuses, labels will be fetched using getTranslatedStatus
+        const PERFORMANCE_STATUS_KEYS = ["Not Started", "In Progress", "Completed", "Needs Support", "Mastered"];
+
+        // Helper function to get translated strings
+        function getString(key, dynamicValues = {}) {
+            if (typeof MIALAMA_TEACHER_TRANSLATIONS_AR !== 'object' || MIALAMA_TEACHER_TRANSLATIONS_AR === null) {
+                console.error("MIALAMA_TEACHER_TRANSLATIONS_AR is not available.");
+                return `Missing translations: ${key}`;
+            }
+            let translation = MIALAMA_TEACHER_TRANSLATIONS_AR[key];
+            if (translation) {
+                return translation.replace(/\{\{(\w+)\}\}/g, (match, placeholderName) => {
+                    return dynamicValues[placeholderName] !== undefined ? dynamicValues[placeholderName] : match;
+                });
+            }
+            console.warn(`Translation key "${key}" not found for language 'ar'. Using key as fallback.`);
+            return key; 
+        }
+        
+        // Helper function to get translated status string
+        function getTranslatedStatus(statusKey) {
+            const translationKey = 'status.' + statusKey.toLowerCase().replace(/\s+/g, '');
+            return getString(translationKey) || getString('status.unknown');
+        }
+
+
+        document.addEventListener('DOMContentLoaded', async function() {
+            // Set language and direction
+            if (typeof setDocumentLanguageAndDirection === 'function') {
+                setDocumentLanguageAndDirection('ar');
+            } else {
+                console.warn('setDocumentLanguageAndDirection function not found.');
+            }
+            
+            // Apply initial translations to static content
+            if (typeof applyTranslations === 'function') {
+                applyTranslations('ar');
+            } else {
+                console.warn('applyTranslations function not found.');
+            }
+            
+            document.getElementById('footerCopyrightText').innerHTML = getString("footer.copyrightText", { year: new Date().getFullYear() });
+
+            const params = new URLSearchParams(window.location.search);
+            currentClassId = params.get('class_id');
+            currentLessonId = params.get('lesson_id');
+
+            if (!currentClassId || !currentLessonId) {
+                showError(getString("alert.lessonView.classOrLessonIdMissing"));
+                return;
+            }
+
+            try {
+                await initializeDatabase();
+                console.log(getString("console.dbInitLessonView"));
+
+                const teacherId = localStorage.getItem(CURRENT_TEACHER_ID_KEY);
+                if (!teacherId) {
+                    alert(getString("alert.noTeacherInfo"));
+                    window.location.href = 'setup.html';
+                    return;
+                }
+                currentTeacher = await getTeacher(teacherId);
+                if (!currentTeacher) {
+                    alert(getString("alert.teacherProfileNotFound"));
+                    localStorage.removeItem(CURRENT_TEACHER_ID_KEY);
+                    window.location.href = 'setup.html';
+                    return;
+                }
+                updateUserUI(currentTeacher);
+
+                currentClassDetails = await getClassById(currentClassId);
+                currentLessonDetails = await getLesson(currentLessonId);
+
+                if (!currentClassDetails || currentClassDetails.teacher_id !== currentTeacher.teacher_id) {
+                    showError(getString("error.lessonView.classNotFoundOrPermission"));
+                    return;
+                }
+                if (!currentLessonDetails) {
+                    showError(getString("error.lessonView.lessonNotFound"));
+                    return;
+                }
+
+                const implementations = await getImplementationsForLessonInClass(currentClassId, currentLessonId);
+                if (implementations && implementations.length > 0) {
+                    lessonImplementation = implementations[0]; 
+                } else {
+                    console.warn(getString("warn.lessonView.noImplementation", {lessonId: currentLessonId, classId: currentClassId}));
+                    displayGlobalMessage(getString("info.lessonView.lessonNotImplementedNote"), "info", true);
+                }
+
+                document.getElementById('pageTitle').textContent = getString("page.lessonView.titleForLesson", {lessonName: escapeHTML(currentLessonDetails.lesson_title_ar)});
+                document.getElementById('lessonNameBreadcrumb').textContent = escapeHTML(currentLessonDetails.lesson_title_ar);
+                document.getElementById('classLinkBreadcrumb').href = `class_details.html?class_id=${currentClassId}`;
+                document.getElementById('classLinkBreadcrumb').textContent = getString("breadcrumb.classLinkText", {className: escapeHTML(currentClassDetails.class_name)}); // Reusing key from student_progress
+                document.getElementById('lessonSubHeader').innerHTML = getString("page.lessonView.subHeader", {className: `<span id="classNameForLesson">${escapeHTML(currentClassDetails.class_name)}</span>`});
+
+
+                displayLessonDetails();
+                studentsInClass = await getStudentsInClass(currentClassId);
+                await loadActivitiesAndProgress();
+
+                document.getElementById('lessonDetailsContent').style.display = 'block';
+                
+                // Re-apply translations after dynamic content might have been populated
+                if (typeof applyTranslations === 'function') {
+                    applyTranslations('ar', { 
+                        className: escapeHTML(currentClassDetails.class_name),
+                        lessonName: escapeHTML(currentLessonDetails.lesson_title_ar),
+                        teacherName: currentTeacher.full_name 
+                    });
+                }
+
+            } catch (error) {
+                console.error(getString("error.lessonView.loadingDetails", {errorMessage: error.message}), error);
+                showError(getString("error.lessonView.loadingDetails", { errorMessage: error.message + (error.stack ? `\n${error.stack}` : '') }));
+            }
+        });
+
+        function displayGlobalMessage(message, type = "info", isSticky = false) {
+            const successDiv = document.getElementById('successMessageGlobal');
+            const errorDiv = document.getElementById('errorMessageGlobal');
+            
+            successDiv.style.display = 'none';
+            errorDiv.style.display = 'none';
+            successDiv.className = 'alert alert-success'; // Reset
+            errorDiv.className = 'alert alert-danger';   // Reset
+
+            let targetDiv;
+            if (type === "success") {
+                targetDiv = successDiv;
+            } else if (type === "error") {
+                targetDiv = errorDiv;
+            } else { 
+                targetDiv = successDiv; 
+                targetDiv.className = 'alert alert-info';
+            }
+            
+            targetDiv.textContent = message; // Message is already translated
+            targetDiv.style.display = 'block';
+
+            if (!isSticky) {
+                setTimeout(() => {
+                    targetDiv.style.display = 'none';
+                    if (type === "info") targetDiv.className = 'alert alert-success'; // Reset class
+                }, 5000);
+            }
+        }
+
+        function updateUserUI(teacher) {
+            document.getElementById('teacherNameDisplay').textContent = teacher.full_name;
+            const initials = teacher.full_name.split(' ').map(n => n[0]).join('').substring(0,2).toUpperCase();
+            document.getElementById('userAvatar').textContent = initials;
+            document.getElementById('logoutButton').addEventListener('click', function(e) {
+                e.preventDefault();
+                if (confirm(getString("confirm.logout"))) {
+                    localStorage.removeItem(CURRENT_TEACHER_ID_KEY);
+                    window.location.href = 'setup.html';
+                }
+            });
+        }
+
+        function showError(message) {
+            const errorDiv = document.getElementById('loadingError');
+            errorDiv.textContent = message; // Message is already translated
+            errorDiv.style.display = 'block';
+            document.getElementById('pageTitle').textContent = getString("page.title.error");
+            const lessonDetailsContent = document.getElementById('lessonDetailsContent');
+            if(lessonDetailsContent) lessonDetailsContent.style.display = 'none';
+        }
+
+        function displayLessonDetails() {
+            if (!currentLessonDetails) {
+                console.error("displayLessonDetails called but currentLessonDetails is null.");
+                return;
+            }
+            document.getElementById('lessonTitleCard').textContent = getString("card.lessonInfo.titlePrefix") + " " + escapeHTML(currentLessonDetails.lesson_title_ar);
+            
+            const objectivesList = document.getElementById('lessonObjectivesList');
+            if (Array.isArray(currentLessonDetails.lesson_objectives_ar) && currentLessonDetails.lesson_objectives_ar.length > 0) {
+                objectivesList.innerHTML = currentLessonDetails.lesson_objectives_ar.map(obj => `<li>${escapeHTML(obj)}</li>`).join('');
+            } else {
+                objectivesList.innerHTML = `<li>${getString("lesson.noObjectivesListed")}</li>`;
+            }
+            
+            document.getElementById('lessonTeachingFocus').textContent = escapeHTML(currentLessonDetails.teaching_focus_ar) || getString("text.notApplicable");
+
+            const materialsList = document.getElementById('lessonMaterialsList');
+            if (Array.isArray(currentLessonDetails.materials_needed_ar) && currentLessonDetails.materials_needed_ar.length > 0) {
+                materialsList.innerHTML = currentLessonDetails.materials_needed_ar.map(mat => `<li>${escapeHTML(mat)}</li>`).join('');
+            } else {
+                materialsList.innerHTML = `<li>${getString("lesson.noMaterialsListed")}</li>`;
+            }
+
+            document.getElementById('lessonEstimatedTime').textContent = currentLessonDetails.estimated_total_lesson_time_minutes || getString("text.notApplicable");
+            document.getElementById('lessonTeacherGuidePages').textContent = 
+                (currentLessonDetails.teacher_guide_page_start && currentLessonDetails.teacher_guide_page_end) ?
+                getString("text.pageRange", {startPage: currentLessonDetails.teacher_guide_page_start, endPage: currentLessonDetails.teacher_guide_page_end}) : getString("text.notApplicable");
+            document.getElementById('lessonStudentBookPages').textContent = escapeHTML(currentLessonDetails.student_book_page_references_ar) || getString("text.notApplicable");
+        }
+
+        async function loadActivitiesAndProgress() {
+            const activitiesContainer = document.getElementById('activitiesContainer');
+            activitiesContainer.innerHTML = `<div class="text-center p-3"><div class="spinner-border spinner-border-sm" role="status"></div> ${getString("text.loadingActivities")}</div>`;
+
+            const activities = await getActivitiesForLesson(currentLessonId);
+            if (!activities || activities.length === 0) {
+                activitiesContainer.innerHTML = `<p class="text-muted">${getString("text.noActivitiesFoundLesson")}</p>`;
+                return;
+            }
+
+            let activitiesHtml = '';
+            for (const activity of activities) {
+                const instructionsHtml = (Array.isArray(activity.teacher_instructions_ar) && activity.teacher_instructions_ar.length > 0)
+                    ? activity.teacher_instructions_ar.map(instr => `<li>${escapeHTML(instr)}</li>`).join('')
+                    : `<li>${getString("activity.noInstructionsProvided")}</li>`;
+
+                let bulkStatusOptionsHtml = PERFORMANCE_STATUS_KEYS.map(statusKey => 
+                    `<option value="${statusKey}">${getTranslatedStatus(statusKey)}</option>`
+                ).join('');
+
+                activitiesHtml += `
+                    <div class="card activity-card" id="activity-card-${activity.activity_id}" data-activity-id="${activity.activity_id}">
+                        <div class="card-header">
+                            <h4 class="card-title">${escapeHTML(activity.activity_name_ar)} ${getString("activity.sequenceLabelShort", {sequenceNumber: activity.activity_sequential_id})}</h4>
+                        </div>
+                        <!-- Bulk Update Controls -->
+                        <div class="bulk-update-controls">
+                            <div class="form-check flex-grow-1">
+                                <input class="form-check-input activity-select-all-header" type="checkbox" value="" id="selectAll-${activity.activity_id}" title="${getString("bulkUpdate.selectAllLabel")}">
+                                <label class="form-check-label" for="selectAll-${activity.activity_id}" data-translate="bulkUpdate.selectAllLabel">
+                                    Select All
+                                </label>
+                            </div>
+                            <select class="form-select form-select-sm w-auto bulk-status-select" id="bulkStatus-${activity.activity_id}">
+                                <option value="" data-translate="bulkUpdate.selectStatusPlaceholder">-- Bulk Status --</option>
+                                ${bulkStatusOptionsHtml}
+                            </select>
+                            <button class="btn btn-sm btn-outline-secondary apply-bulk-status" 
+                                    ${!lessonImplementation ? `disabled title="${getString("bulkUpdate.applyButton.disabledTooltip")}"` : ''}>
+                                <i class="ti ti-checks"></i> <span data-translate="bulkUpdate.applyToSelectedButton">Apply to Selected</span>
+                            </button>
+                        </div>
+                        <div class="card-body">
+                            <p><strong><span data-translate="activity.typeLabel">Type:</span></strong> ${escapeHTML(activity.activity_type) || getString("text.notApplicable")}</p>
+                            <p><strong><span data-translate="lesson.estTimeLabel">Estimated Time:</span></strong> ${activity.estimated_time_activity_minutes || getString("text.notApplicable")} <span data-translate="lesson.minutesSuffix">minutes</span></p>
+                            <div><strong data-translate="activity.teacherInstructionsLabel">Teacher Instructions:</strong>
+                                <ul>${instructionsHtml}</ul>
+                            </div>
+                            ${activity.content_to_deliver_ar && activity.content_to_deliver_ar.nashid_title ? 
+                                `<div><strong>${getString("activity.contentNashidLabel", {nashidTitle: escapeHTML(activity.content_to_deliver_ar.nashid_title)})}</strong><pre>${escapeHTML(activity.content_to_deliver_ar.nashid_lyrics || '')}</pre></div>` : ''
+                            }
+                            <h5 class="mt-3" data-translate="heading.studentProgressForActivity">Student Progress for this Activity:</h5>
+                            <div class="table-responsive">
+                                <table class="table table-sm table-vcenter student-progress-table">
+                                    <thead>
+                                        <tr>
+                                            <th><!-- Checkbox --></th>
+                                            <th data-translate="table.header.studentName">Student Name</th>
+                                            <th data-translate="table.header.status">Status</th>
+                                            <th data-translate="table.header.notes">Notes</th>
+                                            <th data-translate="table.header.actions">Actions</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>`;
+                
+                if (studentsInClass && studentsInClass.length > 0) {
+                    for (const student of studentsInClass) {
+                        let performance = null;
+                        if (lessonImplementation) {
+                            performance = await getStudentPerformanceForActivityInImplementation(student.student_id, activity.activity_id, lessonImplementation.implementation_id);
+                        }
+
+                        const statusDropdownId = `status-${activity.activity_id}-${student.student_id}`;
+                        const notesInputId = `notes-${activity.activity_id}-${student.student_id}`;
+                        
+                        let statusOptionsHtml = PERFORMANCE_STATUS_KEYS.map(statusKey => 
+                            `<option value="${statusKey}" ${performance && performance.performance_status === statusKey ? 'selected' : ''}>${getTranslatedStatus(statusKey)}</option>`
+                        ).join('');
+
+                        activitiesHtml += `
+                            <tr data-student-id="${student.student_id}">
+                                <td><input type="checkbox" class="form-check-input student-select-checkbox" data-student-id="${student.student_id}"></td>
+                                <td>${escapeHTML(student.full_name)}</td>
+                                <td class="student-activity-status">
+                                    <select class="form-select form-select-sm individual-status-select" id="${statusDropdownId}" data-student-id="${student.student_id}" data-activity-id="${activity.activity_id}" ${!lessonImplementation ? 'disabled' : ''}>
+                                        ${statusOptionsHtml}
+                                    </select>
+                                </td>
+                                <td>
+                                    <input type="text" class="form-control form-control-sm notes-input" id="${notesInputId}" 
+                                           data-translate-placeholder="form.placeholder.teacherNotes" placeholder="Teacher notes..." 
+                                           value="${performance && performance.teacher_notes ? escapeHTML(performance.teacher_notes) : ''}"
+                                           data-student-id="${student.student_id}" data-activity-id="${activity.activity_id}" ${!lessonImplementation ? 'disabled' : ''}>
+                                </td>
+                                <td>
+                                    <button class="btn btn-sm btn-primary save-student-activity" 
+                                            data-student-id="${student.student_id}" 
+                                            data-activity-id="${activity.activity_id}"
+                                            title="${getString("button.saveProgress.tooltip", {studentName: escapeHTML(student.full_name)})}" 
+                                            ${!lessonImplementation ? 'disabled' : ''}>
+                                        <i class="ti ti-device-floppy"></i> <span data-translate="button.saveProgress">Save</span>
+                                    </button>
+                                </td>
+                            </tr>`;
+                    }
+                } else {
+                    activitiesHtml += `<tr><td colspan="5" class="text-center text-muted" data-translate="text.noStudentsToTrackProgress">No students in this class to track progress for.</td></tr>`;
+                }
+                activitiesHtml += `</tbody></table></div></div></div>`; 
+            }
+            activitiesContainer.innerHTML = activitiesHtml;
+
+            // Re-apply translations to newly added dynamic content
+            if (typeof applyTranslations === 'function') {
+                applyTranslations('ar', {}, activitiesContainer); // Scope to the container
+            }
+
+            activitiesContainer.querySelectorAll('.activity-select-all-header').forEach(headerCheckbox => {
+                headerCheckbox.addEventListener('change', handleSelectAllStudentsForActivity);
+            });
+            activitiesContainer.querySelectorAll('.apply-bulk-status').forEach(button => {
+                button.addEventListener('click', handleApplyBulkStatus);
+            });
+            activitiesContainer.querySelectorAll('.save-student-activity').forEach(button => {
+                button.addEventListener('click', handleSaveStudentActivityProgress);
+            });
+        }
+
+        function handleSelectAllStudentsForActivity(event) {
+            const headerCheckbox = event.currentTarget;
+            const activityCard = headerCheckbox.closest('.activity-card');
+            const studentCheckboxes = activityCard.querySelectorAll('.student-select-checkbox');
+            studentCheckboxes.forEach(checkbox => {
+                checkbox.checked = headerCheckbox.checked;
+            });
+        }
+
+        async function handleApplyBulkStatus(event) {
+            const applyButton = event.currentTarget;
+            const activityCard = applyButton.closest('.activity-card');
+            const activityId = activityCard.getAttribute('data-activity-id');
+            const bulkStatusSelect = activityCard.querySelector('.bulk-status-select');
+            const selectedBulkStatus = bulkStatusSelect.value;
+            const activityNameElement = activityCard.querySelector('h4.card-title');
+            const activityName = activityNameElement ? activityNameElement.textContent.split('(')[0].trim() : 'this activity';
+
+
+            if (!selectedBulkStatus) {
+                displayGlobalMessage(getString("alert.bulkUpdate.noStatusSelected"), "error");
+                return;
+            }
+            if (!lessonImplementation) {
+                displayGlobalMessage(getString("alert.bulkUpdate.lessonNotImplemented"), "error", true);
+                return;
+            }
+
+            const selectedStudentCheckboxes = activityCard.querySelectorAll('.student-select-checkbox:checked');
+            if (selectedStudentCheckboxes.length === 0) {
+                displayGlobalMessage(getString("alert.bulkUpdate.noStudentsSelected"), "error");
+                return;
+            }
+
+            applyButton.disabled = true;
+            const originalButtonHtml = applyButton.innerHTML;
+            applyButton.innerHTML = `<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> ${getString("bulkUpdate.applyingButton")}`;
+
+            const savePromises = [];
+
+            selectedStudentCheckboxes.forEach(checkbox => {
+                const studentId = checkbox.getAttribute('data-student-id');
+                const studentRow = checkbox.closest('tr');
+                
+                const individualStatusDropdown = studentRow.querySelector('.individual-status-select');
+                if (individualStatusDropdown) {
+                    individualStatusDropdown.value = selectedBulkStatus;
+                }
+
+                const notesInput = studentRow.querySelector('.notes-input');
+                const currentNotes = notesInput ? notesInput.value.trim() : '';
+
+                const performanceData = {
+                    student_id: studentId,
+                    activity_id: activityId,
+                    implementation_id: lessonImplementation.implementation_id,
+                    performance_status: selectedBulkStatus,
+                    teacher_notes: currentNotes, // Keep existing notes or clear them based on preference
+                };
+                savePromises.push(recordStudentActivityPerformance(performanceData));
+            });
+
+            try {
+                await Promise.all(savePromises);
+                displayGlobalMessage(getString("alert.bulkUpdate.success", {status: getTranslatedStatus(selectedBulkStatus), count: selectedStudentCheckboxes.length, activityName: escapeHTML(activityName)}), "success");
+                
+                const headerCheckbox = activityCard.querySelector('.activity-select-all-header');
+                if(headerCheckbox) headerCheckbox.checked = false;
+                selectedStudentCheckboxes.forEach(cb => cb.checked = false);
+                bulkStatusSelect.value = ""; 
+
+            } catch (error) {
+                console.error(getString("error.bulkUpdate.generic", {errorMessage: error.message}), error);
+                displayGlobalMessage(getString("error.bulkUpdate.generic", {errorMessage: error.message}), "error");
+            } finally {
+                applyButton.disabled = false;
+                applyButton.innerHTML = originalButtonHtml;
+            }
+        }
+
+        async function handleSaveStudentActivityProgress(event) {
+            const button = event.currentTarget;
+            const studentId = button.getAttribute('data-student-id');
+            const activityId = button.getAttribute('data-activity-id');
+
+            if (!lessonImplementation) {
+                displayGlobalMessage(getString("alert.saveProgress.lessonNotImplemented"), "error", true);
+                return;
+            }
+            
+            const statusDropdown = document.getElementById(`status-${activityId}-${studentId}`);
+            const notesInput = document.getElementById(`notes-${activityId}-${studentId}`);
+
+            const performanceData = {
+                student_id: studentId,
+                activity_id: activityId,
+                implementation_id: lessonImplementation.implementation_id,
+                performance_status: statusDropdown.value, // This is the English key
+                teacher_notes: notesInput.value.trim(),
+            };
+
+            button.disabled = true;
+            const originalButtonText = button.querySelector('span').textContent; // Get current text
+            button.querySelector('span').textContent = getString("button.saveProgress.saving");
+            button.querySelector('i').className = 'ti ti-loader-2 spinner';
+
+
+            try {
+                await recordStudentActivityPerformance(performanceData);
+                button.querySelector('i').className = 'ti ti-check';
+                button.querySelector('span').textContent = getString("button.saveProgress.saved");
+                button.classList.remove('btn-primary');
+                button.classList.add('btn-success');
+                
+                setTimeout(() => {
+                    button.classList.remove('btn-success');
+                    button.classList.add('btn-primary');
+                    button.querySelector('i').className = 'ti ti-device-floppy';
+                    button.querySelector('span').textContent = originalButtonText; // Restore original text
+                    button.disabled = false;
+                }, 2000);
+            } catch (error) {
+                console.error(getString("error.saveProgress.generic", {studentId: studentId, activityId: activityId, errorMessage: error.message}), error);
+                displayGlobalMessage(getString("error.saveProgress.generic", {studentId: studentId, activityId: activityId, errorMessage: error.message}), "error");
+                button.querySelector('i').className = 'ti ti-device-floppy';
+                button.querySelector('span').textContent = originalButtonText; // Restore original text
+                button.disabled = false;
+            }
+        }
+        
+        function escapeHTML(str) {
+            if (str === null || str === undefined) return '';
+            return String(str).replace(/[&<>"']/g, function (match) {
+                return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[match];
+            });
+        }
+
+    </script>
+</body>
+</html>
